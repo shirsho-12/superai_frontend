@@ -4,13 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp } from "lucide-react";
+import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart } from "lucide-react";
 import RegulatoryCard from "@/components/RegulatoryCard";
 import GapReviewScreen from "@/components/GapReviewScreen";
 import AmendmentWorkbench from "@/components/AmendmentWorkbench";
+import ExecutiveReport from "@/components/ExecutiveReport";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedRegulation, setSelectedRegulation] = useState<{ id: number; title: string } | null>(null);
   
   // Mock data for regulatory items
   const regulatoryItems = [
@@ -63,6 +65,21 @@ const Index = () => {
     urgentItems: 2
   };
 
+  const handleViewGaps = (item: { id: number; title: string }) => {
+    setSelectedRegulation(item);
+    setActiveTab("gaps");
+  };
+
+  const handleAmendPolicies = (item: { id: number; title: string }) => {
+    setSelectedRegulation(item);
+    setActiveTab("amendments");
+  };
+
+  const handleGenerateReport = (item: { id: number; title: string }) => {
+    setSelectedRegulation(item);
+    setActiveTab("reports");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <header className="bg-white shadow-sm border-b">
@@ -93,7 +110,7 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2">
               <TrendingUp className="w-4 h-4" />
               <span>Regulatory Horizon</span>
@@ -105,6 +122,10 @@ const Index = () => {
             <TabsTrigger value="amendments" className="flex items-center space-x-2">
               <FileText className="w-4 h-4" />
               <span>Amendment Workbench</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center space-x-2">
+              <BarChart className="w-4 h-4" />
+              <span>Executive Reports</span>
             </TabsTrigger>
           </TabsList>
 
@@ -175,8 +196,9 @@ const Index = () => {
                   <RegulatoryCard 
                     key={item.id} 
                     item={item} 
-                    onViewGaps={() => setActiveTab("gaps")}
-                    onAmendPolicies={() => setActiveTab("amendments")}
+                    onViewGaps={() => handleViewGaps(item)}
+                    onAmendPolicies={() => handleAmendPolicies(item)}
+                    onGenerateReport={() => handleGenerateReport(item)}
                   />
                 ))}
               </div>
@@ -184,11 +206,33 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="gaps">
-            <GapReviewScreen />
+            <GapReviewScreen regulation={selectedRegulation} />
           </TabsContent>
 
           <TabsContent value="amendments">
-            <AmendmentWorkbench />
+            <AmendmentWorkbench regulation={selectedRegulation} />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            {selectedRegulation ? (
+              <ExecutiveReport 
+                regulationTitle={selectedRegulation.title}
+                regulationId={selectedRegulation.id.toString()}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <BarChart className="h-16 w-16 mx-auto text-gray-400" />
+                <h3 className="mt-4 text-lg font-semibold">Select a regulation first</h3>
+                <p className="text-gray-500">Please select a regulatory item to generate an executive report</p>
+                <Button 
+                  onClick={() => setActiveTab("dashboard")} 
+                  variant="outline" 
+                  className="mt-4"
+                >
+                  Go to Regulatory Horizon
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

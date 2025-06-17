@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, AlertTriangle, CheckCircle, Eye, Edit } from "lucide-react";
+import { Calendar, Clock, AlertTriangle, CheckCircle, Eye, Edit, BarChart } from "lucide-react";
 
 interface RegulatoryItem {
   id: number;
@@ -19,9 +18,10 @@ interface RegulatoryCardProps {
   item: RegulatoryItem;
   onViewGaps: () => void;
   onAmendPolicies: () => void;
+  onGenerateReport: () => void;
 }
 
-const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies }: RegulatoryCardProps) => {
+const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }: RegulatoryCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "New": return "bg-blue-100 text-blue-800 border-blue-200";
@@ -122,7 +122,7 @@ const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies }: RegulatoryCardPro
         )}
 
         {/* Action Buttons */}
-        <div className="flex space-x-2 pt-2">
+        <div className="flex flex-wrap gap-2 pt-2">
           {item.status === "Gaps Identified" && (
             <Button 
               onClick={onViewGaps}
@@ -156,6 +156,19 @@ const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies }: RegulatoryCardPro
             <Button variant="outline" size="sm" className="flex-1">
               <Eye className="w-4 h-4 mr-2" />
               View Summary
+            </Button>
+          )}
+          
+          {/* New Report Button - Available for items with identified gaps or completed items */}
+          {(item.status === "Gaps Identified" || item.status === "Completed") && (
+            <Button 
+              onClick={onGenerateReport}
+              variant="secondary" 
+              size="sm" 
+              className="flex-1"
+            >
+              <BarChart className="w-4 h-4 mr-2" />
+              Generate Report
             </Button>
           )}
         </div>
