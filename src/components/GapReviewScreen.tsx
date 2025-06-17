@@ -3,14 +3,34 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, X, AlertTriangle, FileText } from "lucide-react";
+import { CheckCircle, X, AlertTriangle, FileText, User, Calendar } from "lucide-react";
+import TaskAssignmentModal from "./TaskAssignmentModal";
 
 interface GapReviewScreenProps {
   regulation: { id: number; title: string } | null;
 }
 
+interface TaskAssignment {
+  assigneeId: string;
+  assigneeName: string;
+  dueDate: string;
+  priority: "high" | "medium" | "low";
+  notes: string;
+}
+
+interface Gap {
+  id: number;
+  description: string;
+  regulationText: string;
+  policySection: string;
+  currentPolicy: string;
+  severity: string;
+  acknowledged: boolean;
+  assignment?: TaskAssignment;
+}
+
 const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
-  const [gaps, setGaps] = useState([
+  const [gaps, setGaps] = useState<Gap[]>([
     {
       id: 1,
       description: "Customer identification requirements need enhancement",
@@ -39,6 +59,12 @@ const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
 
   const handleDismissGap = (gapId: number) => {
     setGaps(gaps.filter(gap => gap.id !== gapId));
+  };
+
+  const handleAssignTask = (gapId: number, assignment: TaskAssignment) => {
+    setGaps(gaps.map(gap => 
+      gap.id === gapId ? { ...gap, assignment } : gap
+    ));
   };
 
   if (!regulation) {
@@ -80,15 +106,46 @@ const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">{gap.description}</CardTitle>
-                    <Badge variant={gap.severity === "high" ? "destructive" : "default"} className="mt-2">
-                      {gap.severity === "high" ? "High Priority" : "Medium Priority"}
-                    </Badge>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <Badge variant={gap.severity === "high" ? "destructive" : "default"}>
+                        {gap.severity === "high" ? "High Priority" : "Medium Priority"}
+                      </Badge>
+                      {gap.assignment && (
+                        <Badge variant="outline" className="flex items-center space-x-1">
+                          <User className="w-3 h-3" />
+                          <span>{gap.assignment.assigneeName}</span>
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <Badge variant="outline">{gap.policySection}</Badge>
                 </div>
               </CardHeader>
               
               <CardContent className="space-y-4">
+                {gap.assignment && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-blue-900 mb-2">Task Assignment</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                      <div className="flex items-center space-x-1">
+                        <User className="w-4 h-4 text-blue-600" />
+                        <span>Assigned to: {gap.assignment.assigneeName}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span>Due: {new Date(gap.assignment.dueDate).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <AlertTriangle className="w-4 h-4 text-blue-600" />
+                        <span>Priority: {gap.assignment.priority}</span>
+                      </div>
+                    </div>
+                    {gap.assignment.notes && (
+                      <p className="text-sm text-blue-800 mt-2">{gap.assignment.notes}</p>
+                    )}
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-900 mb-2">Regulation Text</h4>
@@ -110,6 +167,12 @@ const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
                     <CheckCircle className="w-4 h-4 mr-2" />
                     {gap.acknowledged ? "Acknowledged" : "Acknowledge Gap"}
                   </Button>
+                  
+                  <TaskAssignmentModal
+                    gapId={gap.id}
+                    gapDescription={gap.description}
+                    onAssign={(assignment) => handleAssignTask(gap.id, assignment)}
+                  />
                   
                   <Button 
                     variant="outline" 

@@ -4,11 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart } from "lucide-react";
+import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart, Globe, User, Shield, Activity } from "lucide-react";
 import RegulatoryCard from "@/components/RegulatoryCard";
 import GapReviewScreen from "@/components/GapReviewScreen";
 import AmendmentWorkbench from "@/components/AmendmentWorkbench";
 import ExecutiveReport from "@/components/ExecutiveReport";
+import MultiDocumentAnalysis from "@/components/MultiDocumentAnalysis";
+import AuditTrail from "@/components/AuditTrail";
+import UserManagement from "@/components/UserManagement";
+import AutomatedIngestion from "@/components/AutomatedIngestion";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -110,22 +114,38 @@ const Index = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-8 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center space-x-2">
               <TrendingUp className="w-4 h-4" />
-              <span>Regulatory Horizon</span>
+              <span>Dashboard</span>
             </TabsTrigger>
             <TabsTrigger value="gaps" className="flex items-center space-x-2">
               <AlertCircle className="w-4 h-4" />
-              <span>Gap Review</span>
+              <span>Gaps</span>
             </TabsTrigger>
             <TabsTrigger value="amendments" className="flex items-center space-x-2">
               <FileText className="w-4 h-4" />
-              <span>Amendment Workbench</span>
+              <span>Amendments</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center space-x-2">
               <BarChart className="w-4 h-4" />
-              <span>Executive Reports</span>
+              <span>Reports</span>
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex items-center space-x-2">
+              <Activity className="w-4 h-4" />
+              <span>Analysis</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center space-x-2">
+              <Shield className="w-4 h-4" />
+              <span>Audit</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2">
+              <User className="w-4 h-4" />
+              <span>Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="ingestion" className="flex items-center space-x-2">
+              <Globe className="w-4 h-4" />
+              <span>Ingestion</span>
             </TabsTrigger>
           </TabsList>
 
@@ -229,10 +249,26 @@ const Index = () => {
                   variant="outline" 
                   className="mt-4"
                 >
-                  Go to Regulatory Horizon
+                  Go to Dashboard
                 </Button>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="analysis">
+            <MultiDocumentAnalysis />
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <AuditTrail />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="ingestion">
+            <AutomatedIngestion />
           </TabsContent>
         </Tabs>
       </main>
