@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart, Globe, User, Shield, Activity } from "lucide-react";
-import RegulatoryCard from "@/components/RegulatoryCard";
+import RegulatoryCard from "@/components/cards/RegulatoryCard";
 import GapReviewScreen from "@/components/GapReviewScreen";
 import AmendmentWorkbench from "@/components/AmendmentWorkbench";
 import ExecutiveReport from "@/components/ExecutiveReport";
@@ -85,7 +85,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen gradient-header">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
