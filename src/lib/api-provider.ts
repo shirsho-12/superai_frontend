@@ -68,6 +68,29 @@ export interface ManualUploadResponse {
   message: string;
 }
 
+// Task Assignment interface
+export interface TaskAssignment {
+  id: string;
+  documentId: string;
+  taskType: string;
+  assignedTo: string;
+  dueDate: string;
+  status: string;
+  priority: string;
+  createdAt: string;
+}
+
+// Audit Event interface
+export interface AuditEvent {
+  id: string;
+  userId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  details: string;
+  timestamp: string;
+}
+
 class MockApiProvider {
   private baseUrl = "https://api.yourcompany.com/v1"; // TODO: Replace with actual FastAPI endpoint
 
@@ -163,31 +186,6 @@ class MockApiProvider {
     };
 
     return response;
-
-    // TODO: Actual implementation would look like:
-    /*
-    const formData = new FormData();
-    formData.append('file', data.file);
-    formData.append('title', data.title);
-    formData.append('description', data.description || '');
-    formData.append('tag', data.tag);
-    formData.append('publication_date', data.publicationDate);
-
-    const response = await fetch(`${this.baseUrl}/documents/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.getAuthToken()}`, // Add authentication
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Upload failed');
-    }
-
-    return await response.json();
-    */
   }
 
   // Get upload status
@@ -201,58 +199,13 @@ class MockApiProvider {
       status: "completed",
       progress: 100
     };
-
-    // TODO: Actual implementation:
-    /*
-    const response = await fetch(`${this.baseUrl}/uploads/${uploadId}/status`);
-    if (!response.ok) throw new Error('Failed to get upload status');
-    return await response.json();
-    */
-  }
-
-  // Monitoring and ingestion
-  async scanRegulatorySource(sourceUrl: string): Promise<{ documents: RegulatoryDocument[] }> {
-    try {
-      return await this.mockApiCall('/monitoring/scan', { sourceUrl });
-    } catch (error) {
-      toast({
-        title: "Source scan failed",
-        description: "Failed to scan regulatory source",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  // Task management
-  async createTask(assignment: Omit<TaskAssignment, 'id' | 'createdAt'>): Promise<TaskAssignment> {
-    try {
-      return await this.mockApiCall('/tasks/create', assignment);
-    } catch (error) {
-      toast({
-        title: "Task creation failed",
-        description: "Failed to create assignment task",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  // Audit trail
-  async logAuditEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<{ success: boolean }> {
-    try {
-      return await this.mockApiCall('/audit/log', event);
-    } catch (error) {
-      console.error('Failed to log audit event:', error);
-      // Don't show toast for audit failures to avoid spam
-      throw error;
-    }
   }
 }
 
 // Create singleton instance
-export const apiProvider = new ComplianceAPIProvider();
+export const mockApiProvider = new MockApiProvider();
 
+// Real API client for backend integration
 const API_BASE_URL = 'http://localhost:8000'; // Adjust to your backend URL
 
 export const apiClient = {
@@ -263,15 +216,20 @@ export const apiClient = {
   },
   
   getDocumentContent: async (documentId: string) => {
-    return fetch(`/api/documents/${documentId}`).then(res => res.json());
+    return fetch(`${API_BASE_URL}/api/documents/${documentId}`).then(res => res.json());
   },
   
   // Gap Analysis
   analyzeGaps: async (regulationId: string, policyId: string) => {
-    return fetch('/api/analyze', {
+    return fetch(`${API_BASE_URL}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ regulation_id: regulationId, policy_id: policyId })
     }).then(res => res.json());
   },
+  
+  // Get gap details for a specific document
+  getGapDetails: async (documentId: string) => {
+    return fetch(`${API_BASE_URL}/api/documents/${documentId}/gaps`).then(res => res.json());
+  }
 };
