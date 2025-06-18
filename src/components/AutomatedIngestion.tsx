@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Globe, RefreshCw, CheckCircle, AlertTriangle, Clock, Download, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useComplianceAPI } from "@/hooks/use-compliance-api";
+import ManualFileUpload from "./ManualFileUpload";
 
 interface MonitoringSource {
   id: string;
@@ -31,6 +32,7 @@ interface IngestedDocument {
 }
 
 const AutomatedIngestion: React.FC = () => {
+  const { uploadDocument, scanRegulatorySource } = useComplianceAPI();
   const [isScanning, setIsScanning] = useState(false);
   const [sources, setSources] = useState<MonitoringSource[]>([
     {
@@ -106,6 +108,45 @@ const AutomatedIngestion: React.FC = () => {
     });
   };
 
+  const handleManualUpload = async (uploadData: {
+    title: string;
+    description: string;
+    tag: string;
+    date: Date;
+    file: File | null;
+  }) => {
+    if (!uploadData.file) {
+      throw new Error("No file selected");
+    }
+
+    try {
+      const result = await uploadDocument({
+        title: uploadData.title,
+        description: uploadData.description,
+        tag: uploadData.tag,
+        publicationDate: uploadData.date.toISOString(),
+        file: uploadData.file
+      });
+
+      // Add the uploaded document to the recent documents list
+      const newDoc: IngestedDocument = {
+        id: result.documentId,
+        title: uploadData.title,
+        source: "Manual Upload",
+        detectedDate: new Date().toISOString(),
+        publicationDate: uploadData.date.toISOString(),
+        documentType: uploadData.tag.replace('_', ' '),
+        status: "processing",
+        confidence: 1.0
+      };
+
+      setRecentDocuments([newDoc, ...recentDocuments]);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      throw error;
+    }
+  };
+
   const handleManualScan = () => {
     setIsScanning(true);
     
@@ -172,19 +213,22 @@ const AutomatedIngestion: React.FC = () => {
               <CardTitle className="text-2xl font-bold">Automated Regulatory Ingestion</CardTitle>
               <p className="text-gray-500">Monitor and automatically ingest new regulations from MAS website</p>
             </div>
-            <Button onClick={handleManualScan} disabled={isScanning}>
-              {isScanning ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Manual Scan
-                </>
-              )}
-            </Button>
+            <div className="flex space-x-2">
+              <ManualFileUpload onUpload={handleManualUpload} />
+              <Button onClick={handleManualScan} disabled={isScanning}>
+                {isScanning ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Manual Scan
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

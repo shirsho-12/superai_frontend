@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { apiProvider, type ComplianceGap, type PolicyAmendment, type AnalysisReport } from "@/lib/api-provider";
 
@@ -76,6 +75,54 @@ export const useComplianceAPI = () => {
     }
   }, []);
 
+  const uploadDocument = useCallback(async (data: {
+    title: string;
+    description?: string;
+    tag: string;
+    publicationDate: string;
+    file: File;
+  }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await apiProvider.uploadDocument(data);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Document upload failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getUploadStatus = useCallback(async (uploadId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await apiProvider.getUploadStatus(uploadId);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to get upload status');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getUploadedDocuments = useCallback(async (filters?: { tag?: string; dateFrom?: string; dateTo?: string }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await apiProvider.getUploadedDocuments(filters);
+      return result;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch uploaded documents');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     error,
@@ -84,5 +131,8 @@ export const useComplianceAPI = () => {
     generateReport,
     analyzeCrossImpact,
     scanRegulatorySource,
+    uploadDocument,
+    getUploadStatus,
+    getUploadedDocuments,
   };
 };

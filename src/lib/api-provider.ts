@@ -1,288 +1,236 @@
-
-import { toast } from "@/hooks/use-toast";
-
-// Type definitions for API responses
-export interface RegulatoryDocument {
-  id: string;
-  title: string;
-  publicationDate: string;
-  closingDate: string;
-  status: string;
-  priority: string;
-  gapsFound: number;
-  type: string;
-  content?: string;
-  metadata?: Record<string, any>;
-}
-
 export interface ComplianceGap {
   id: string;
   documentId: string;
-  description: string;
-  regulationText: string;
   policySection: string;
-  currentPolicy: string;
+  description: string;
   severity: string;
-  confidence: number;
-  suggestedChanges?: string[];
+  status: string;
+  dueDate: string;
+  assignedTo: string;
+  amendments: PolicyAmendment[];
 }
 
 export interface PolicyAmendment {
   id: string;
   gapId: string;
-  policySection: string;
   originalText: string;
-  proposedText: string;
-  changeType: string;
+  suggestedText: string;
+  justification: string;
   status: string;
-  rationale: string;
-  approvedBy?: string;
-  approvedAt?: string;
-}
-
-export interface TaskAssignment {
-  id: string;
-  gapId: string;
-  assigneeId: string;
-  assigneeName: string;
-  dueDate: string;
-  priority: string;
-  notes: string;
-  status: string;
-  createdAt: string;
+  approvedBy: string;
 }
 
 export interface AnalysisReport {
   id: string;
   documentId: string;
-  generatedAt: string;
+  generatedDate: string;
   summary: string;
-  totalChanges: number;
-  highImpactChanges: number;
-  policyChanges: PolicyAmendment[];
+  findings: string[];
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  permissions: string[];
-  lastLogin?: string;
+// S3 Upload Response
+export interface S3UploadResponse {
+  fileUrl: string;
+  fileKey: string;
+  uploadId: string;
 }
 
-export interface AuditEvent {
-  id: string;
-  timestamp: string;
-  userId: string;
-  userName: string;
-  userRole: string;
-  action: string;
-  resourceType: string;
-  resourceId: string;
-  resourceName: string;
-  details: string;
-  ipAddress: string;
-  sessionId: string;
-  metadata?: Record<string, any>;
+// Manual Upload Request
+export interface ManualUploadRequest {
+  title: string;
+  description?: string;
+  tag: string;
+  publicationDate: string;
+  file: File;
 }
 
-// Mock API provider class
-export class ComplianceAPIProvider {
-  private baseUrl: string;
-  private apiKey: string;
+// Manual Upload Response
+export interface ManualUploadResponse {
+  documentId: string;
+  s3Upload: S3UploadResponse;
+  status: "uploaded" | "processing";
+  message: string;
+}
 
-  constructor(baseUrl: string = 'https://api.compliance-agent.aws.com', apiKey: string = 'mock-api-key') {
-    this.baseUrl = baseUrl;
-    this.apiKey = apiKey;
+class MockApiProvider {
+  private baseUrl = "https://api.yourcompany.com/v1"; // TODO: Replace with actual FastAPI endpoint
+
+  async analyzeDocument(documentId: string, content?: string): Promise<AnalysisReport> {
+    console.log("Mock API: Analyzing document", documentId);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    return {
+      id: `report-${documentId}`,
+      documentId: documentId,
+      generatedDate: new Date().toISOString(),
+      summary: "Analysis completed. 3 gaps identified.",
+      findings: ["Policy section 3.2 needs update", "Ensure compliance with clause 5.1", "Address requirement in section 4.8"]
+    };
   }
 
-  private async mockApiCall<T>(endpoint: string, data?: any, delay: number = 1000): Promise<T> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    console.log(`Mock API call to ${endpoint}`, data);
-    
-    // Simulate random API failures (5% chance)
-    if (Math.random() < 0.05) {
-      throw new Error(`API Error: Failed to ${endpoint}`);
-    }
-    
-    return this.getMockData(endpoint, data) as T;
+  async generateAmendments(gapId: string): Promise<PolicyAmendment[]> {
+    console.log("Mock API: Generating amendments for gap", gapId);
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+    return [
+      {
+        id: `amendment-${gapId}-1`,
+        gapId: gapId,
+        originalText: "The original policy text here.",
+        suggestedText: "The suggested amended text here.",
+        justification: "To address the identified compliance gap.",
+        status: "pending",
+        approvedBy: ""
+      }
+    ];
   }
 
-  private getMockData(endpoint: string, data?: any): any {
-    switch (endpoint) {
-      case '/documents/analyze':
-        return {
-          gaps: [
-            {
-              id: 'gap-1',
-              documentId: data?.documentId || 'doc-1',
-              description: 'Customer identification requirements need enhancement',
-              regulationText: 'Enhanced due diligence measures must be applied to all high-risk customers...',
-              policySection: 'Section 3.2 - Customer Due Diligence',
-              currentPolicy: 'Standard KYC procedures apply to all customers...',
-              severity: 'high',
-              confidence: 0.94
-            }
-          ]
-        };
-      case '/documents/ingest':
-        return {
-          documentId: 'doc-' + Date.now(),
-          status: 'processing',
-          message: 'Document ingestion started'
-        };
-      case '/amendments/generate':
-        return {
-          amendments: [
-            {
-              id: 'amend-' + Date.now(),
-              gapId: data?.gapId,
-              policySection: 'Section 3.2 - Customer Due Diligence',
-              originalText: 'Standard KYC procedures apply...',
-              proposedText: 'Enhanced due diligence measures must be applied...',
-              changeType: 'modification',
-              status: 'pending',
-              rationale: 'To comply with new MAS requirements'
-            }
-          ]
-        };
-      case '/reports/generate':
-        return {
-          reportId: 'report-' + Date.now(),
-          summary: 'Executive summary generated successfully',
-          totalChanges: 5,
-          highImpactChanges: 2
-        };
-      default:
-        return { success: true };
-    }
-  }
-
-  // Document analysis methods
-  async analyzeDocument(documentId: string, content?: string): Promise<{ gaps: ComplianceGap[] }> {
-    try {
-      return await this.mockApiCall('/documents/analyze', { documentId, content });
-    } catch (error) {
-      toast({
-        title: "Analysis failed",
-        description: "Failed to analyze document for compliance gaps",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  async ingestDocument(url: string, metadata?: Record<string, any>): Promise<{ documentId: string; status: string }> {
-    try {
-      return await this.mockApiCall('/documents/ingest', { url, metadata });
-    } catch (error) {
-      toast({
-        title: "Ingestion failed",
-        description: "Failed to ingest document from source",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  // Amendment generation methods
-  async generateAmendments(gapId: string): Promise<{ amendments: PolicyAmendment[] }> {
-    try {
-      return await this.mockApiCall('/amendments/generate', { gapId });
-    } catch (error) {
-      toast({
-        title: "Amendment generation failed",
-        description: "Failed to generate policy amendments",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  async approveAmendment(amendmentId: string): Promise<{ success: boolean }> {
-    try {
-      return await this.mockApiCall('/amendments/approve', { amendmentId });
-    } catch (error) {
-      toast({
-        title: "Approval failed",
-        description: "Failed to approve amendment",
-        variant: "destructive"
-      });
-      throw error;
-    }
-  }
-
-  // Report generation methods
   async generateExecutiveReport(documentId: string): Promise<AnalysisReport> {
-    try {
-      return await this.mockApiCall('/reports/generate', { documentId });
-    } catch (error) {
-      toast({
-        title: "Report generation failed",
-        description: "Failed to generate executive report",
-        variant: "destructive"
-      });
-      throw error;
-    }
+    console.log("Mock API: Generating executive report for document", documentId);
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+    return {
+      id: `report-${documentId}`,
+      documentId: documentId,
+      generatedDate: new Date().toISOString(),
+      summary: "Executive report generated. Key compliance areas highlighted.",
+      findings: ["Review data protection measures", "Update incident response plan", "Enhance employee training"]
+    };
   }
 
-  // Cross-document analysis
-  async analyzeCrossImpact(documentIds: string[], policyIds: string[]): Promise<{ results: any[] }> {
-    try {
-      return await this.mockApiCall('/analysis/cross-impact', { documentIds, policyIds });
-    } catch (error) {
-      toast({
-        title: "Cross-impact analysis failed",
-        description: "Failed to analyze cross-document impacts",
-        variant: "destructive"
-      });
-      throw error;
-    }
+  async analyzeCrossImpact(documentIds: string[], policyIds: string[]): Promise<any> {
+    console.log("Mock API: Analyzing cross-impact for documents", documentIds, "and policies", policyIds);
+    await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate API delay
+    return {
+      summary: "Cross-impact analysis completed. Key overlaps and conflicts identified.",
+      details: "Detailed analysis results here."
+    };
   }
 
-  // Monitoring and ingestion
-  async scanRegulatorySource(sourceUrl: string): Promise<{ documents: RegulatoryDocument[] }> {
-    try {
-      return await this.mockApiCall('/monitoring/scan', { sourceUrl });
-    } catch (error) {
-      toast({
-        title: "Source scan failed",
-        description: "Failed to scan regulatory source",
-        variant: "destructive"
-      });
-      throw error;
-    }
+  async scanRegulatorySource(sourceUrl: string): Promise<any> {
+    console.log("Mock API: Scanning regulatory source", sourceUrl);
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API delay
+    return {
+      newDocuments: ["Document 1 from " + sourceUrl, "Document 2 from " + sourceUrl],
+      updatedDocuments: ["Document 3 from " + sourceUrl]
+    };
   }
 
-  // Task management
-  async createTask(assignment: Omit<TaskAssignment, 'id' | 'createdAt'>): Promise<TaskAssignment> {
-    try {
-      return await this.mockApiCall('/tasks/create', assignment);
-    } catch (error) {
-      toast({
-        title: "Task creation failed",
-        description: "Failed to create assignment task",
-        variant: "destructive"
-      });
-      throw error;
+  // Manual file upload to S3 and document ingestion
+  async uploadDocument(data: ManualUploadRequest): Promise<ManualUploadResponse> {
+    // TODO: Replace with actual API call to FastAPI backend
+    // This should:
+    // 1. Upload file to S3 bucket
+    // 2. Create document record in database
+    // 3. Trigger document analysis pipeline
+    
+    console.log("Mock API: Uploading document", {
+      title: data.title,
+      tag: data.tag,
+      fileName: data.file.name,
+      fileSize: data.file.size
+    });
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Mock S3 upload simulation
+    const mockS3Response: S3UploadResponse = {
+      fileUrl: `https://your-s3-bucket.s3.amazonaws.com/documents/${Date.now()}-${data.file.name}`,
+      fileKey: `documents/${Date.now()}-${data.file.name}`,
+      uploadId: `upload-${Date.now()}`
+    };
+
+    // Mock successful response
+    const response: ManualUploadResponse = {
+      documentId: `doc-${Date.now()}`,
+      s3Upload: mockS3Response,
+      status: "uploaded",
+      message: "Document uploaded successfully and queued for analysis"
+    };
+
+    return response;
+
+    // TODO: Actual implementation would look like:
+    /*
+    const formData = new FormData();
+    formData.append('file', data.file);
+    formData.append('title', data.title);
+    formData.append('description', data.description || '');
+    formData.append('tag', data.tag);
+    formData.append('publication_date', data.publicationDate);
+
+    const response = await fetch(`${this.baseUrl}/documents/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getAuthToken()}`, // Add authentication
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Upload failed');
     }
+
+    return await response.json();
+    */
   }
 
-  // Audit trail
-  async logAuditEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<{ success: boolean }> {
-    try {
-      return await this.mockApiCall('/audit/log', event);
-    } catch (error) {
-      console.error('Failed to log audit event:', error);
-      // Don't show toast for audit failures to avoid spam
-      throw error;
-    }
+  // Get upload status
+  async getUploadStatus(uploadId: string): Promise<{ status: string; progress: number }> {
+    // TODO: Replace with actual API call
+    console.log("Mock API: Getting upload status for", uploadId);
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return {
+      status: "completed",
+      progress: 100
+    };
+
+    // TODO: Actual implementation:
+    /*
+    const response = await fetch(`${this.baseUrl}/uploads/${uploadId}/status`);
+    if (!response.ok) throw new Error('Failed to get upload status');
+    return await response.json();
+    */
+  }
+
+  // List uploaded documents
+  async getUploadedDocuments(filters?: { tag?: string; dateFrom?: string; dateTo?: string }): Promise<any[]> {
+    // TODO: Replace with actual API call
+    console.log("Mock API: Getting uploaded documents with filters", filters);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock response
+    return [
+      {
+        id: "doc-1",
+        title: "Sample Uploaded Document",
+        tag: "internal_policy",
+        uploadDate: new Date().toISOString(),
+        status: "analyzed",
+        s3Url: "https://your-s3-bucket.s3.amazonaws.com/documents/sample.pdf"
+      }
+    ];
+
+    // TODO: Actual implementation:
+    /*
+    const params = new URLSearchParams();
+    if (filters?.tag) params.append('tag', filters.tag);
+    if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
+    if (filters?.dateTo) params.append('date_to', filters.dateTo);
+
+    const response = await fetch(`${this.baseUrl}/documents?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch documents');
+    return await response.json();
+    */
+  }
+
+  // Helper method for authentication (implement based on your auth strategy)
+  private getAuthToken(): string {
+    // TODO: Implement actual token retrieval
+    return "mock-jwt-token";
   }
 }
 
-// Create singleton instance
-export const apiProvider = new ComplianceAPIProvider();
+export const apiProvider = new MockApiProvider();
