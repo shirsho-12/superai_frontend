@@ -1,3 +1,19 @@
+import { toast } from "@/hooks/use-toast";
+
+// Type definitions for API responses
+export interface RegulatoryDocument {
+  id: string;
+  title: string;
+  publicationDate: string;
+  closingDate: string;
+  status: string;
+  priority: string;
+  gapsFound: number;
+  type: string;
+  content?: string;
+  metadata?: Record<string, any>;
+}
+
 export interface ComplianceGap {
   id: string;
   documentId: string;
@@ -194,43 +210,68 @@ class MockApiProvider {
     */
   }
 
-  // List uploaded documents
-  async getUploadedDocuments(filters?: { tag?: string; dateFrom?: string; dateTo?: string }): Promise<any[]> {
-    // TODO: Replace with actual API call
-    console.log("Mock API: Getting uploaded documents with filters", filters);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock response
-    return [
-      {
-        id: "doc-1",
-        title: "Sample Uploaded Document",
-        tag: "internal_policy",
-        uploadDate: new Date().toISOString(),
-        status: "analyzed",
-        s3Url: "https://your-s3-bucket.s3.amazonaws.com/documents/sample.pdf"
-      }
-    ];
-
-    // TODO: Actual implementation:
-    /*
-    const params = new URLSearchParams();
-    if (filters?.tag) params.append('tag', filters.tag);
-    if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
-    if (filters?.dateTo) params.append('date_to', filters.dateTo);
-
-    const response = await fetch(`${this.baseUrl}/documents?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch documents');
-    return await response.json();
-    */
+  // Monitoring and ingestion
+  async scanRegulatorySource(sourceUrl: string): Promise<{ documents: RegulatoryDocument[] }> {
+    try {
+      return await this.mockApiCall('/monitoring/scan', { sourceUrl });
+    } catch (error) {
+      toast({
+        title: "Source scan failed",
+        description: "Failed to scan regulatory source",
+        variant: "destructive"
+      });
+      throw error;
+    }
   }
 
-  // Helper method for authentication (implement based on your auth strategy)
-  private getAuthToken(): string {
-    // TODO: Implement actual token retrieval
-    return "mock-jwt-token";
+  // Task management
+  async createTask(assignment: Omit<TaskAssignment, 'id' | 'createdAt'>): Promise<TaskAssignment> {
+    try {
+      return await this.mockApiCall('/tasks/create', assignment);
+    } catch (error) {
+      toast({
+        title: "Task creation failed",
+        description: "Failed to create assignment task",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }
+
+  // Audit trail
+  async logAuditEvent(event: Omit<AuditEvent, 'id' | 'timestamp'>): Promise<{ success: boolean }> {
+    try {
+      return await this.mockApiCall('/audit/log', event);
+    } catch (error) {
+      console.error('Failed to log audit event:', error);
+      // Don't show toast for audit failures to avoid spam
+      throw error;
+    }
   }
 }
 
-export const apiProvider = new MockApiProvider();
+// Create singleton instance
+export const apiProvider = new ComplianceAPIProvider();
+
+const API_BASE_URL = 'http://localhost:8000'; // Adjust to your backend URL
+
+export const apiClient = {
+  // Document Management
+  getDocuments: async (documentType?: 'regulation' | 'policy') => {
+    const params = documentType ? `?document_type=${documentType}` : '';
+    return fetch(`${API_BASE_URL}/api/documents${params}`).then(res => res.json());
+  },
+  
+  getDocumentContent: async (documentId: string) => {
+    return fetch(`/api/documents/${documentId}`).then(res => res.json());
+  },
+  
+  // Gap Analysis
+  analyzeGaps: async (regulationId: string, policyId: string) => {
+    return fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ regulation_id: regulationId, policy_id: policyId })
+    }).then(res => res.json());
+  },
+};

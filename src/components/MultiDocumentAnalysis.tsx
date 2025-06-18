@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Search, AlertTriangle, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useDocuments } from '../hooks/use-documents';
 
 interface PolicyDocument {
   id: string;
@@ -25,6 +25,14 @@ interface CrossImpactResult {
 }
 
 const MultiDocumentAnalysis: React.FC = () => {
+  const { 
+    documents, 
+    currentDocument, 
+    loading, 
+    error, 
+    fetchDocuments, 
+    fetchDocumentContent 
+  } = useDocuments();
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<CrossImpactResult[]>([]);
   const [selectedRegulations, setSelectedRegulations] = useState<string[]>([]);
@@ -65,6 +73,10 @@ const MultiDocumentAnalysis: React.FC = () => {
     { id: "3", title: "Digital Payment Token Services - Licensing Framework" },
     { id: "4", title: "AML/CFT Requirements for Money Service Businesses" }
   ];
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   const handlePolicySelection = (policyId: string, checked: boolean) => {
     setPolicyDocuments(docs => 
@@ -126,6 +138,10 @@ const MultiDocumentAnalysis: React.FC = () => {
       case "low": return "bg-green-100 text-green-800 border-green-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
+  };
+
+  const handleDocumentSelect = (documentId) => {
+    fetchDocumentContent(documentId);
   };
 
   return (

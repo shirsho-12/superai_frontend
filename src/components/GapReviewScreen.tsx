@@ -1,10 +1,11 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, X, AlertTriangle, FileText, User, Calendar } from "lucide-react";
 import TaskAssignmentModal from "./TaskAssignmentModal";
+import { useDocuments } from '../hooks/use-documents';
+import { apiClient } from '../lib/api-provider';
 
 interface GapReviewScreenProps {
   regulation: { id: number; title: string } | null;
@@ -30,6 +31,12 @@ interface Gap {
 }
 
 const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
+  const { documents, fetchDocuments } = useDocuments();
+  const [selectedRegulation, setSelectedRegulation] = useState(null);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [gapAnalysisResults, setGapAnalysisResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [gaps, setGaps] = useState<Gap[]>([
     {
       id: 1,
@@ -50,6 +57,28 @@ const GapReviewScreen: React.FC<GapReviewScreenProps> = ({ regulation }) => {
       acknowledged: false
     }
   ]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const handleAnalyzeGaps = async () => {
+    if (!selectedRegulation || !selectedPolicy) return;
+    
+    setLoading(true);
+    try {
+      const results = await apiClient.analyzeGaps(
+        selectedRegulation.id,
+        selectedPolicy.id
+      );
+      setGapAnalysisResults(results);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAcknowledgeGap = (gapId: number) => {
     setGaps(gaps.map(gap => 
