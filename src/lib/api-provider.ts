@@ -94,21 +94,28 @@ export interface AuditEvent {
 class MockApiProvider {
   private baseUrl = "https://api.yourcompany.com/v1"; // TODO: Replace with actual FastAPI endpoint
 
-  async analyzeDocument(documentId: string, content?: string): Promise<AnalysisReport> {
+  async analyzeDocument(
+    documentId: string,
+    content?: string
+  ): Promise<AnalysisReport> {
     console.log("Mock API: Analyzing document", documentId);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
     return {
       id: `report-${documentId}`,
       documentId: documentId,
       generatedDate: new Date().toISOString(),
       summary: "Analysis completed. 3 gaps identified.",
-      findings: ["Policy section 3.2 needs update", "Ensure compliance with clause 5.1", "Address requirement in section 4.8"]
+      findings: [
+        "Policy section 3.2 needs update",
+        "Ensure compliance with clause 5.1",
+        "Address requirement in section 4.8",
+      ],
     };
   }
 
   async generateAmendments(gapId: string): Promise<PolicyAmendment[]> {
     console.log("Mock API: Generating amendments for gap", gapId);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API delay
     return [
       {
         id: `amendment-${gapId}-1`,
@@ -117,64 +124,87 @@ class MockApiProvider {
         suggestedText: "The suggested amended text here.",
         justification: "To address the identified compliance gap.",
         status: "pending",
-        approvedBy: ""
-      }
+        approvedBy: "",
+      },
     ];
   }
 
   async generateExecutiveReport(documentId: string): Promise<AnalysisReport> {
-    console.log("Mock API: Generating executive report for document", documentId);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+    console.log(
+      "Mock API: Generating executive report for document",
+      documentId
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate API delay
     return {
       id: `report-${documentId}`,
       documentId: documentId,
       generatedDate: new Date().toISOString(),
       summary: "Executive report generated. Key compliance areas highlighted.",
-      findings: ["Review data protection measures", "Update incident response plan", "Enhance employee training"]
+      findings: [
+        "Review data protection measures",
+        "Update incident response plan",
+        "Enhance employee training",
+      ],
     };
   }
 
-  async analyzeCrossImpact(documentIds: string[], policyIds: string[]): Promise<any> {
-    console.log("Mock API: Analyzing cross-impact for documents", documentIds, "and policies", policyIds);
-    await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate API delay
+  async analyzeCrossImpact(
+    documentIds: string[],
+    policyIds: string[]
+  ): Promise<any> {
+    console.log(
+      "Mock API: Analyzing cross-impact for documents",
+      documentIds,
+      "and policies",
+      policyIds
+    );
+    await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulate API delay
     return {
-      summary: "Cross-impact analysis completed. Key overlaps and conflicts identified.",
-      details: "Detailed analysis results here."
+      summary:
+        "Cross-impact analysis completed. Key overlaps and conflicts identified.",
+      details: "Detailed analysis results here.",
     };
   }
 
   async scanRegulatorySource(sourceUrl: string): Promise<any> {
     console.log("Mock API: Scanning regulatory source", sourceUrl);
-    await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulate API delay
     return {
-      newDocuments: ["Document 1 from " + sourceUrl, "Document 2 from " + sourceUrl],
-      updatedDocuments: ["Document 3 from " + sourceUrl]
+      newDocuments: [
+        "Document 1 from " + sourceUrl,
+        "Document 2 from " + sourceUrl,
+      ],
+      updatedDocuments: ["Document 3 from " + sourceUrl],
     };
   }
 
   // Manual file upload to S3 and document ingestion
-  async uploadDocument(data: ManualUploadRequest): Promise<ManualUploadResponse> {
+  async uploadDocument(
+    data: ManualUploadRequest
+  ): Promise<ManualUploadResponse> {
     // TODO: Replace with actual API call to FastAPI backend
     // This should:
     // 1. Upload file to S3 bucket
     // 2. Create document record in database
     // 3. Trigger document analysis pipeline
-    
+
     console.log("Mock API: Uploading document", {
       title: data.title,
       tag: data.tag,
       fileName: data.file.name,
-      fileSize: data.file.size
+      fileSize: data.file.size,
     });
 
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Mock S3 upload simulation
     const mockS3Response: S3UploadResponse = {
-      fileUrl: `https://your-s3-bucket.s3.amazonaws.com/documents/${Date.now()}-${data.file.name}`,
+      fileUrl: `https://your-s3-bucket.s3.amazonaws.com/documents/${Date.now()}-${
+        data.file.name
+      }`,
       fileKey: `documents/${Date.now()}-${data.file.name}`,
-      uploadId: `upload-${Date.now()}`
+      uploadId: `upload-${Date.now()}`,
     };
 
     // Mock successful response
@@ -182,22 +212,24 @@ class MockApiProvider {
       documentId: `doc-${Date.now()}`,
       s3Upload: mockS3Response,
       status: "uploaded",
-      message: "Document uploaded successfully and queued for analysis"
+      message: "Document uploaded successfully and queued for analysis",
     };
 
     return response;
   }
 
   // Get upload status
-  async getUploadStatus(uploadId: string): Promise<{ status: string; progress: number }> {
+  async getUploadStatus(
+    uploadId: string
+  ): Promise<{ status: string; progress: number }> {
     // TODO: Replace with actual API call
     console.log("Mock API: Getting upload status for", uploadId);
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     return {
       status: "completed",
-      progress: 100
+      progress: 100,
     };
   }
 }
@@ -206,30 +238,126 @@ class MockApiProvider {
 export const mockApiProvider = new MockApiProvider();
 
 // Real API client for backend integration
-const API_BASE_URL = 'http://localhost:8000'; // Adjust to your backend URL
+const API_BASE_URL = "http://localhost:8000"; // Adjust to your backend URL
 
 export const apiClient = {
   // Document Management
-  getDocuments: async (documentType?: 'regulation' | 'policy') => {
-    const params = documentType ? `?document_type=${documentType}` : '';
-    return fetch(`${API_BASE_URL}/api/documents${params}`).then(res => res.json());
+  getDocuments: async (documentType?: "regulation" | "policy") => {
+    const params = documentType ? `?document_type=${documentType}` : "";
+    return fetch(`${API_BASE_URL}/api/documents${params}`).then((res) =>
+      res.json()
+    );
   },
-  
+
   getDocumentContent: async (documentId: string) => {
-    return fetch(`${API_BASE_URL}/api/documents/${documentId}`).then(res => res.json());
+    return fetch(`${API_BASE_URL}/api/documents/${documentId}`).then((res) =>
+      res.json()
+    );
   },
-  
+
   // Gap Analysis
   analyzeGaps: async (regulationId: string, policyId: string) => {
     return fetch(`${API_BASE_URL}/api/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ regulation_id: regulationId, policy_id: policyId })
-    }).then(res => res.json());
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        regulation_id: regulationId,
+        policy_id: policyId,
+      }),
+    }).then((res) => res.json());
   },
-  
+
   // Get gap details for a specific document
   getGapDetails: async (documentId: string) => {
-    return fetch(`${API_BASE_URL}/api/documents/${documentId}/gaps`).then(res => res.json());
-  }
+    return fetch(`${API_BASE_URL}/api/documents/${documentId}/gaps`).then(
+      (res) => res.json()
+    );
+  },
 };
+
+export class ComplianceAPIProvider {
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor(
+    baseUrl: string = "https://api.compliance-agent.aws.com",
+    apiKey: string = "mock-api-key"
+  ) {
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  private async mockApiCall<T>(
+    endpoint: string,
+    data?: any,
+    delay: number = 1000
+  ): Promise<T> {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    console.log(`Mock API call to ${endpoint}`, data);
+
+    // Simulate random API failures (5% chance)
+    if (Math.random() < 0.05) {
+      throw new Error(`API Error: Failed to ${endpoint}`);
+    }
+
+    return this.getMockData(endpoint, data) as T;
+  }
+
+  private getMockData(endpoint: string, data?: any): any {
+    switch (endpoint) {
+      case "/documents/analyze":
+        return {
+          gaps: [
+            {
+              id: "gap-1",
+              documentId: data?.documentId || "doc-1",
+              description:
+                "Customer identification requirements need enhancement",
+              regulationText:
+                "Enhanced due diligence measures must be applied to all high-risk customers...",
+              policySection: "Section 3.2 - Customer Due Diligence",
+              currentPolicy:
+                "Standard KYC procedures apply to all customers...",
+              severity: "high",
+              confidence: 0.94,
+            },
+          ],
+        };
+      case "/documents/ingest":
+        return {
+          documentId: "doc-" + Date.now(),
+          status: "processing",
+          message: "Document ingestion started",
+        };
+      case "/amendments/generate":
+        return {
+          amendments: [
+            {
+              id: "amend-" + Date.now(),
+              gapId: data?.gapId,
+              policySection: "Section 3.2 - Customer Due Diligence",
+              originalText: "Standard KYC procedures apply...",
+              proposedText:
+                "Enhanced due diligence measures must be applied...",
+              changeType: "modification",
+              status: "pending",
+              rationale: "To comply with new MAS requirements",
+            },
+          ],
+        };
+      case "/reports/generate":
+        return {
+          reportId: "report-" + Date.now(),
+          summary: "Executive summary generated successfully",
+          totalChanges: 5,
+          highImpactChanges: 2,
+        };
+      default:
+        return { success: true };
+    }
+  }
+}
+
+export const apiProvider = new ComplianceAPIProvider();
