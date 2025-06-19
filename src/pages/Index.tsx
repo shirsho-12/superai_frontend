@@ -1,12 +1,29 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart, Globe, User, Shield, Activity, CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Calendar,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  FileText,
+  Users,
+  TrendingUp,
+  BarChart,
+  Globe,
+  User,
+  Shield,
+  Activity,
+  CalendarIcon,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import RegulatoryCard from "@/components/cards/RegulatoryCard";
@@ -26,41 +43,49 @@ interface IndexProps {
 
 const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [selectedRegulation, setSelectedRegulation] = useState<{ id: number; title: string } | null>(null);
+  const [selectedRegulation, setSelectedRegulation] = useState<{
+    id: number;
+    title: string;
+  } | null>(null);
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
-  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
-  
+  const [loadingStates, setLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
+
   // Mock data for regulatory items
   const regulatoryItems = [
     {
       id: 1,
-      title: "1.1 Consultation Paper on Proposed Amendments to Notice PSN01 - Payment Services",
+      title:
+        "1.1 Consultation Paper on Proposed Amendments to Notice PSN01 - Payment Services",
       publicationDate: "2024-06-10",
       closingDate: "2024-07-25",
       status: "Analysis in Progress",
       priority: "high",
       gapsFound: 3,
-      type: "consultation"
+      type: "consultation",
     },
     {
       id: 2,
-      title: "1.2 Technology Risk Management Guidelines Update for Payment Institutions",
+      title:
+        "1.2 Technology Risk Management Guidelines Update for Payment Institutions",
       publicationDate: "2024-06-08",
       closingDate: "2024-06-25",
       status: "Gaps Identified",
       priority: "urgent",
       gapsFound: 5,
-      type: "guideline"
+      type: "guideline",
     },
     {
       id: 3,
-      title: "1.3 Digital Payment Token Services - Enhanced Licensing Framework",
+      title:
+        "1.3 Digital Payment Token Services - Enhanced Licensing Framework",
       publicationDate: "2024-05-28",
       closingDate: "2024-07-20",
       status: "Completed",
       priority: "medium",
       gapsFound: 0,
-      type: "framework"
+      type: "framework",
     },
     {
       id: 4,
@@ -70,7 +95,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "New",
       priority: "medium",
       gapsFound: 0,
-      type: "notice"
+      type: "notice",
     },
     {
       id: 5,
@@ -80,7 +105,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "Analysis in Progress",
       priority: "high",
       gapsFound: 2,
-      type: "standard"
+      type: "standard",
     },
     {
       id: 6,
@@ -90,7 +115,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "Gaps Identified",
       priority: "medium",
       gapsFound: 4,
-      type: "guideline"
+      type: "guideline",
     },
     {
       id: 7,
@@ -100,17 +125,18 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "New",
       priority: "high",
       gapsFound: 0,
-      type: "framework"
+      type: "framework",
     },
     {
       id: 8,
-      title: "1.8 Mobile Payment Security Guidelines for Financial Institutions",
+      title:
+        "1.8 Mobile Payment Security Guidelines for Financial Institutions",
       publicationDate: "2024-06-01",
       closingDate: "2024-07-18",
       status: "Completed",
       priority: "medium",
       gapsFound: 0,
-      type: "guideline"
+      type: "guideline",
     },
     {
       id: 9,
@@ -120,7 +146,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "Analysis in Progress",
       priority: "high",
       gapsFound: 1,
-      type: "framework"
+      type: "framework",
     },
     {
       id: 10,
@@ -130,14 +156,14 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       status: "New",
       priority: "urgent",
       gapsFound: 0,
-      type: "guideline"
-    }
+      type: "guideline",
+    },
   ];
 
   const filteredItems = useMemo(() => {
     if (!dateFilter) return regulatoryItems;
-    
-    return regulatoryItems.filter(item => {
+
+    return regulatoryItems.filter((item) => {
       const itemDate = new Date(item.publicationDate);
       const filterDate = new Date(dateFilter);
       filterDate.setHours(0, 0, 0, 0);
@@ -149,8 +175,11 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const stats = {
     totalDocuments: regulatoryItems.length,
     pendingGaps: regulatoryItems.reduce((sum, item) => sum + item.gapsFound, 0),
-    completedReviews: regulatoryItems.filter(item => item.status === "Completed").length,
-    urgentItems: regulatoryItems.filter(item => item.priority === "urgent").length
+    completedReviews: regulatoryItems.filter(
+      (item) => item.status === "Completed"
+    ).length,
+    urgentItems: regulatoryItems.filter((item) => item.priority === "urgent")
+      .length,
   };
 
   const handleViewGaps = (item: { id: number; title: string }) => {
@@ -164,19 +193,19 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   };
 
   const handleGenerateReport = async (item: { id: number; title: string }) => {
-    setLoadingStates(prev => ({ ...prev, [`report-${item.id}`]: true }));
-    
+    setLoadingStates((prev) => ({ ...prev, [`report-${item.id}`]: true }));
+
     // Simulate loading for 1-3 seconds
     const loadTime = Math.random() * 2000 + 1000;
-    await new Promise(resolve => setTimeout(resolve, loadTime));
-    
-    setLoadingStates(prev => ({ ...prev, [`report-${item.id}`]: false }));
+    await new Promise((resolve) => setTimeout(resolve, loadTime));
+
+    setLoadingStates((prev) => ({ ...prev, [`report-${item.id}`]: false }));
     setSelectedRegulation(item);
     setActiveTab("reports");
-    
+
     toast({
       title: "Report Generated",
-      description: "Executive report has been generated successfully"
+      description: "Executive report has been generated successfully",
     });
   };
 
@@ -186,24 +215,24 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   };
 
   const handleStartAnalysis = async (item: { id: number; title: string }) => {
-    setLoadingStates(prev => ({ ...prev, [`analysis-${item.id}`]: true }));
-    
+    setLoadingStates((prev) => ({ ...prev, [`analysis-${item.id}`]: true }));
+
     // Simulate loading for 1-3 seconds
     const loadTime = Math.random() * 2000 + 1000;
-    await new Promise(resolve => setTimeout(resolve, loadTime));
-    
-    setLoadingStates(prev => ({ ...prev, [`analysis-${item.id}`]: false }));
-    
+    await new Promise((resolve) => setTimeout(resolve, loadTime));
+
+    setLoadingStates((prev) => ({ ...prev, [`analysis-${item.id}`]: false }));
+
     toast({
       title: "Analysis Started",
-      description: "Document analysis has been initiated"
+      description: "Document analysis has been initiated",
     });
   };
 
   return (
     <div className="min-h-screen gradient-header">
       {/* Loading overlay */}
-      {Object.values(loadingStates).some(loading => loading) && (
+      {Object.values(loadingStates).some((loading) => loading) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg flex items-center space-x-3">
             <LoadingSpinner size="lg" />
@@ -217,15 +246,19 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
               <a href="https://raw.githubusercontent.com/LuqDaMan/compliagent-horizon-view/refs/heads/main/logo.jpg">
-                <img 
-                  src="https://raw.githubusercontent.com/LuqDaMan/compliagent-horizon-view/refs/heads/main/logo.jpg" 
-                  alt="CompliAgent Logo" 
+                <img
+                  src="https://raw.githubusercontent.com/LuqDaMan/compliagent-horizon-view/refs/heads/main/logo.jpg"
+                  alt="Proj Logo"
                   className="w-12 h-12 rounded-lg object-cover"
                 />
               </a>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Cntrl+Comply</h1>
-                <p className="text-sm text-gray-500">Regulatory Change Management</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Ctrl+Comply
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Regulatory Change Management
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -235,7 +268,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
               </Badge>
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">Tana Chen</p>
-                <p className="text-xs text-gray-500">Chief Risk & Compliance Officer</p>
+                <p className="text-xs text-gray-500">
+                  Chief Risk & Compliance Officer
+                </p>
               </div>
             </div>
           </div>
@@ -245,7 +280,10 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-8 mb-8">
-            <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="dashboard"
+              className="flex items-center space-x-2"
+            >
               <TrendingUp className="w-4 h-4" />
               <span>Dashboard</span>
             </TabsTrigger>
@@ -253,15 +291,24 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
               <AlertCircle className="w-4 h-4" />
               <span>Gaps</span>
             </TabsTrigger>
-            <TabsTrigger value="amendments" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="amendments"
+              className="flex items-center space-x-2"
+            >
               <FileText className="w-4 h-4" />
               <span>Amendments</span>
             </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="reports"
+              className="flex items-center space-x-2"
+            >
               <BarChart className="w-4 h-4" />
               <span>Reports</span>
             </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="analysis"
+              className="flex items-center space-x-2"
+            >
               <Activity className="w-4 h-4" />
               <span>Analysis</span>
             </TabsTrigger>
@@ -273,7 +320,10 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
               <User className="w-4 h-4" />
               <span>Users</span>
             </TabsTrigger>
-            <TabsTrigger value="ingestion" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="ingestion"
+              className="flex items-center space-x-2"
+            >
               <Globe className="w-4 h-4" />
               <span>Ingestion</span>
             </TabsTrigger>
@@ -286,44 +336,60 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-blue-600">Total Documents</p>
-                      <p className="text-2xl font-bold text-blue-900">{stats.totalDocuments}</p>
+                      <p className="text-sm font-medium text-blue-600">
+                        Total Documents
+                      </p>
+                      <p className="text-2xl font-bold text-blue-900">
+                        {stats.totalDocuments}
+                      </p>
                     </div>
                     <FileText className="w-8 h-8 text-blue-500" />
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-yellow-50 border-yellow-200">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-yellow-600">Pending Gaps</p>
-                      <p className="text-2xl font-bold text-yellow-900">{stats.pendingGaps}</p>
+                      <p className="text-sm font-medium text-yellow-600">
+                        Pending Gaps
+                      </p>
+                      <p className="text-2xl font-bold text-yellow-900">
+                        {stats.pendingGaps}
+                      </p>
                     </div>
                     <AlertCircle className="w-8 h-8 text-yellow-500" />
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-green-50 border-green-200">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600">Completed Reviews</p>
-                      <p className="text-2xl font-bold text-green-900">{stats.completedReviews}</p>
+                      <p className="text-sm font-medium text-green-600">
+                        Completed Reviews
+                      </p>
+                      <p className="text-2xl font-bold text-green-900">
+                        {stats.completedReviews}
+                      </p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-red-50 border-red-200">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-red-600">Urgent Items</p>
-                      <p className="text-2xl font-bold text-red-900">{stats.urgentItems}</p>
+                      <p className="text-sm font-medium text-red-600">
+                        Urgent Items
+                      </p>
+                      <p className="text-2xl font-bold text-red-900">
+                        {stats.urgentItems}
+                      </p>
                     </div>
                     <Clock className="w-8 h-8 text-red-500" />
                   </div>
@@ -334,13 +400,17 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
             {/* Regulatory Items Grid */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Active Regulatory Items</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Active Regulatory Items
+                </h2>
                 <div className="flex items-center space-x-2">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" size="sm">
                         <CalendarIcon className="w-4 h-4 mr-2" />
-                        {dateFilter ? format(dateFilter, "MMM dd, yyyy") : "Filter by Date"}
+                        {dateFilter
+                          ? format(dateFilter, "MMM dd, yyyy")
+                          : "Filter by Date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="end">
@@ -352,9 +422,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                       />
                       {dateFilter && (
                         <div className="p-2 border-t">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => setDateFilter(undefined)}
                             className="w-full"
                           >
@@ -366,12 +436,12 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                   </Popover>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {filteredItems.map((item) => (
-                  <RegulatoryCard 
-                    key={item.id} 
-                    item={item} 
+                  <RegulatoryCard
+                    key={item.id}
+                    item={item}
                     onViewGaps={() => handleViewGaps(item)}
                     onAmendPolicies={() => handleAmendPolicies(item)}
                     onGenerateReport={() => handleGenerateReport(item)}
@@ -393,18 +463,23 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
 
           <TabsContent value="reports">
             {selectedRegulation ? (
-              <ExecutiveReport 
+              <ExecutiveReport
                 regulationTitle={selectedRegulation.title}
                 regulationId={selectedRegulation.id.toString()}
               />
             ) : (
               <div className="text-center py-12">
                 <BarChart className="h-16 w-16 mx-auto text-gray-400" />
-                <h3 className="mt-4 text-lg font-semibold">Select a regulation first</h3>
-                <p className="text-gray-500">Please select a regulatory item to generate an executive report</p>
-                <Button 
-                  onClick={() => setActiveTab("dashboard")} 
-                  variant="outline" 
+                <h3 className="mt-4 text-lg font-semibold">
+                  Select a regulation first
+                </h3>
+                <p className="text-gray-500">
+                  Please select a regulatory item to generate an executive
+                  report
+                </p>
+                <Button
+                  onClick={() => setActiveTab("dashboard")}
+                  variant="outline"
                   className="mt-4"
                 >
                   Go to Dashboard
@@ -426,7 +501,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
           </TabsContent>
 
           <TabsContent value="ingestion">
-            <AutomatedIngestion onNavigateToDashboard={() => setActiveTab("dashboard")} />
+            <AutomatedIngestion
+              onNavigateToDashboard={() => setActiveTab("dashboard")}
+            />
           </TabsContent>
         </Tabs>
       </main>
