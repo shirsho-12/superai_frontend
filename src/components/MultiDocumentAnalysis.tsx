@@ -1,179 +1,222 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Search, AlertTriangle, BarChart3 } from "lucide-react";
+import { Activity, FileText, AlertTriangle, TrendingUp, Clock } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { toast } from "@/hooks/use-toast";
-import { useDocuments } from '../hooks/use-documents';
+import { useComplianceAPI } from "@/hooks/use-compliance-api";
 
-interface PolicyDocument {
+interface Document {
   id: string;
-  name: string;
-  sections: number;
-  lastUpdated: string;
+  title: string;
+  type: "regulation" | "policy";
+  publicationDate: string;
+  status: string;
   selected: boolean;
 }
 
-interface CrossImpactResult {
-  policyId: string;
-  policyName: string;
-  impactedSections: string[];
-  severity: "high" | "medium" | "low";
-  gapsFound: number;
-}
-
 const MultiDocumentAnalysis: React.FC = () => {
-  const { 
-    documents, 
-    currentDocument, 
-    loading, 
-    error, 
-    fetchDocuments, 
-    fetchDocumentContent 
-  } = useDocuments();
-  const [analyzing, setAnalyzing] = useState(false);
-  const [results, setResults] = useState<CrossImpactResult[]>([]);
-  const [selectedRegulations, setSelectedRegulations] = useState<string[]>([]);
-  const [policyDocuments, setPolicyDocuments] = useState<PolicyDocument[]>([
+  const { analyzeCrossImpact } = useComplianceAPI();
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  
+  const [documents, setDocuments] = useState<Document[]>([
     {
-      id: "aml-cft",
-      name: "AML/CFT Policy",
-      sections: 8,
-      lastUpdated: "2024-05-15",
-      selected: true
-    },
-    {
-      id: "tech-risk",
-      name: "Technology Risk Management Policy",
-      sections: 12,
-      lastUpdated: "2024-04-20",
-      selected: true
-    },
-    {
-      id: "data-protection",
-      name: "Data Protection Policy",
-      sections: 6,
-      lastUpdated: "2024-03-10",
+      id: "reg-1",
+      title: "1.1 MAS Payment Services Notice PSN01",
+      type: "regulation",
+      publicationDate: "2024-06-10",
+      status: "active",
       selected: false
     },
     {
-      id: "operational-risk",
-      name: "Operational Risk Policy",
-      sections: 10,
-      lastUpdated: "2024-02-28",
+      id: "reg-2",
+      title: "1.2 Technology Risk Management Guidelines",
+      type: "regulation",
+      publicationDate: "2024-06-08",
+      status: "active",
+      selected: false
+    },
+    {
+      id: "pol-1",
+      title: "2.1 Internal Customer Due Diligence Policy",
+      type: "policy",
+      publicationDate: "2024-05-15",
+      status: "current",
+      selected: false
+    },
+    {
+      id: "pol-2",
+      title: "2.2 Transaction Monitoring and Reporting Policy",
+      type: "policy",
+      publicationDate: "2024-05-20",
+      status: "current",
+      selected: false
+    },
+    {
+      id: "reg-3",
+      title: "1.3 Digital Payment Token Services Framework",
+      type: "regulation",
+      publicationDate: "2024-05-28",
+      status: "active",
+      selected: false
+    },
+    {
+      id: "pol-3",
+      title: "2.3 Cybersecurity Risk Management Policy",
+      type: "policy",
+      publicationDate: "2024-05-25",
+      status: "current",
       selected: false
     }
   ]);
 
-  const regulations = [
-    { id: "1", title: "Consultation Paper on Proposed Amendments to Notice PSN01" },
-    { id: "2", title: "Technology Risk Management Guidelines Update" },
-    { id: "3", title: "Digital Payment Token Services - Licensing Framework" },
-    { id: "4", title: "AML/CFT Requirements for Money Service Businesses" }
-  ];
-
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const handlePolicySelection = (policyId: string, checked: boolean) => {
-    setPolicyDocuments(docs => 
-      docs.map(doc => 
-        doc.id === policyId ? { ...doc, selected: checked } : doc
-      )
-    );
+  const handleDocumentToggle = (documentId: string) => {
+    setDocuments(documents.map(doc => 
+      doc.id === documentId ? { ...doc, selected: !doc.selected } : doc
+    ));
   };
 
-  const handleRegulationSelection = (regulationId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedRegulations([...selectedRegulations, regulationId]);
-    } else {
-      setSelectedRegulations(selectedRegulations.filter(id => id !== regulationId));
-    }
+  const handleSelectAll = (type?: "regulation" | "policy") => {
+    setDocuments(documents.map(doc => 
+      type ? 
+        (doc.type === type ? { ...doc, selected: true } : doc) :
+        { ...doc, selected: true }
+    ));
   };
 
-  const runCrossImpactAnalysis = () => {
-    const selectedPolicies = policyDocuments.filter(doc => doc.selected);
+  const handleClearAll = () => {
+    setDocuments(documents.map(doc => ({ ...doc, selected: false })));
+  };
+
+  const handleAnalyzeImpact = async () => {
+    const selectedDocs = documents.filter(doc => doc.selected);
     
-    if (selectedPolicies.length === 0 || selectedRegulations.length === 0) {
+    if (selectedDocs.length < 2) {
       toast({
-        title: "Selection required",
-        description: "Please select at least one policy document and one regulation",
+        title: "Insufficient selection",
+        description: "Please select at least 2 documents for cross-impact analysis",
         variant: "destructive"
       });
       return;
     }
 
-    setAnalyzing(true);
+    setIsAnalyzing(true);
+    setAnalysisResults(null);
 
-    // Simulate analysis
-    setTimeout(() => {
-      const mockResults: CrossImpactResult[] = selectedPolicies.map(policy => ({
-        policyId: policy.id,
-        policyName: policy.name,
-        impactedSections: [
-          "Section 3.2 - Customer Due Diligence",
-          "Section 5.1 - Transaction Monitoring",
-          "Section 7.3 - Record Keeping"
-        ].slice(0, Math.ceil(Math.random() * 3) + 1),
-        severity: Math.random() > 0.5 ? "high" : "medium",
-        gapsFound: Math.floor(Math.random() * 5) + 1
-      }));
+    try {
+      // Extended loading time for impact analysis (5 seconds)
+      setTimeout(async () => {
+        const regulationIds = selectedDocs.filter(doc => doc.type === "regulation").map(doc => doc.id);
+        const policyIds = selectedDocs.filter(doc => doc.type === "policy").map(doc => doc.id);
+        
+        const results = await analyzeCrossImpact(regulationIds, policyIds);
+        
+        // Mock detailed results with numbered gaps
+        const mockResults = {
+          summary: results.summary,
+          totalConflicts: 3,
+          criticalIssues: 2,
+          recommendations: 5,
+          conflicts: [
+            {
+              id: "1.1",
+              title: "Customer Identification Timeline Mismatch",
+              severity: "high",
+              description: "1.1.a Regulation requires 24-hour customer verification while policy allows 48-hour window",
+              affectedDocuments: ["reg-1", "pol-1"],
+              recommendation: "1.1.b Update internal policy to align with 24-hour regulatory requirement"
+            },
+            {
+              id: "1.2", 
+              title: "Technology Risk Assessment Frequency",
+              severity: "medium",
+              description: "1.2.a Policy mandates quarterly assessments but regulation suggests monthly reviews for high-risk services",
+              affectedDocuments: ["reg-2", "pol-3"],
+              recommendation: "1.2.b Increase assessment frequency for high-risk digital payment services"
+            },
+            {
+              id: "1.3",
+              title: "Transaction Monitoring Thresholds",
+              severity: "high",
+              description: "1.3.a Current policy thresholds may not capture all suspicious activities as defined in new regulations",
+              affectedDocuments: ["reg-3", "pol-2"],
+              recommendation: "1.3.b Recalibrate monitoring systems to align with updated regulatory thresholds"
+            }
+          ]
+        };
+        
+        setAnalysisResults(mockResults);
+        setIsAnalyzing(false);
+        
+        toast({
+          title: "Analysis completed",
+          description: `Found ${mockResults.totalConflicts} conflicts requiring attention`
+        });
+      }, 5000); // 5-second delay for impact analysis
 
-      setResults(mockResults);
-      setAnalyzing(false);
+    } catch (error) {
+      setIsAnalyzing(false);
       toast({
-        title: "Analysis complete",
-        description: `Found cross-functional impacts across ${mockResults.length} policy documents`
+        title: "Analysis failed",
+        description: "Unable to complete cross-impact analysis. Please try again.",
+        variant: "destructive"
       });
-    }, 2000);
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "high": return "bg-red-100 text-red-800 border-red-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-green-100 text-green-800 border-green-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const handleDocumentSelect = (documentId) => {
-    fetchDocumentContent(documentId);
-  };
+  const selectedCount = documents.filter(doc => doc.selected).length;
+  const regulationCount = documents.filter(doc => doc.type === "regulation").length;
+  const policyCount = documents.filter(doc => doc.type === "policy").length;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Multi-Document Cross-Impact Analysis</CardTitle>
-          <p className="text-gray-500">Analyze regulatory changes across multiple policy documents simultaneously</p>
+          <CardTitle className="text-2xl font-bold flex items-center space-x-2">
+            <Activity className="w-6 h-6" />
+            <span>Multi-Document Cross-Impact Analysis</span>
+          </CardTitle>
+          <p className="text-gray-500">
+            Analyze conflicts and overlaps between regulations and internal policies
+          </p>
         </CardHeader>
       </Card>
 
+      {/* Document Selection */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Select Regulations</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                <span>Regulations ({regulationCount})</span>
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => handleSelectAll("regulation")}>
+                Select All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {regulations.map((regulation) => (
-              <div key={regulation.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`reg-${regulation.id}`}
-                  checked={selectedRegulations.includes(regulation.id)}
-                  onCheckedChange={(checked) => 
-                    handleRegulationSelection(regulation.id, checked as boolean)
-                  }
+            {documents.filter(doc => doc.type === "regulation").map((doc) => (
+              <div key={doc.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                <Checkbox
+                  checked={doc.selected}
+                  onCheckedChange={() => handleDocumentToggle(doc.id)}
                 />
-                <label 
-                  htmlFor={`reg-${regulation.id}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {regulation.title}
-                </label>
+                <div className="flex-1">
+                  <h4 className="font-medium">{doc.title}</h4>
+                  <p className="text-sm text-gray-500">
+                    Published: {new Date(doc.publicationDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-blue-600">
+                  {doc.status}
+                </Badge>
               </div>
             ))}
           </CardContent>
@@ -181,96 +224,131 @@ const MultiDocumentAnalysis: React.FC = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Select Policy Documents</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-green-600" />
+                <span>Internal Policies ({policyCount})</span>
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => handleSelectAll("policy")}>
+                Select All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {policyDocuments.map((policy) => (
-              <div key={policy.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`policy-${policy.id}`}
-                    checked={policy.selected}
-                    onCheckedChange={(checked) => 
-                      handlePolicySelection(policy.id, checked as boolean)
-                    }
-                  />
-                  <label 
-                    htmlFor={`policy-${policy.id}`}
-                    className="text-sm font-medium leading-none"
-                  >
-                    {policy.name}
-                  </label>
+            {documents.filter(doc => doc.type === "policy").map((doc) => (
+              <div key={doc.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                <Checkbox
+                  checked={doc.selected}
+                  onCheckedChange={() => handleDocumentToggle(doc.id)}
+                />
+                <div className="flex-1">
+                  <h4 className="font-medium">{doc.title}</h4>
+                  <p className="text-sm text-gray-500">
+                    Updated: {new Date(doc.publicationDate).toLocaleDateString()}
+                  </p>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {policy.sections} sections
-                </div>
+                <Badge variant="outline" className="text-green-600">
+                  {doc.status}
+                </Badge>
               </div>
             ))}
           </CardContent>
         </Card>
       </div>
 
+      {/* Analysis Controls */}
       <Card>
         <CardContent className="pt-6">
-          <Button 
-            onClick={runCrossImpactAnalysis}
-            disabled={analyzing}
-            className="w-full"
-            size="lg"
-          >
-            {analyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Running Cross-Impact Analysis...
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4 mr-2" />
-                Run Cross-Impact Analysis
-              </>
-            )}
-          </Button>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                {selectedCount} document{selectedCount !== 1 ? 's' : ''} selected
+              </span>
+              {selectedCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleClearAll}>
+                  Clear All
+                </Button>
+              )}
+            </div>
+            
+            <Button 
+              onClick={handleAnalyzeImpact}
+              disabled={selectedCount < 2 || isAnalyzing}
+              size="lg"
+            >
+              {isAnalyzing ? (
+                <>
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  Analyzing Impact... (This may take up to 5 seconds)
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Analyze Cross-Impact
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {results.length > 0 && (
+      {/* Analysis Results */}
+      {analysisResults && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <BarChart3 className="w-5 h-5" />
-              <span>Cross-Impact Analysis Results</span>
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              <span>Analysis Results</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {results.map((result) => (
-              <div key={result.policyId} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-semibold">{result.policyName}</h4>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getSeverityColor(result.severity)}>
-                      {result.severity.toUpperCase()} IMPACT
-                    </Badge>
-                    <Badge variant="outline">
-                      {result.gapsFound} gaps found
-                    </Badge>
-                  </div>
-                </div>
-                
-                <Separator className="my-3" />
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Impacted Sections:</p>
-                  <div className="space-y-1">
-                    {result.impactedSections.map((section, index) => (
-                      <div key={index} className="flex items-center space-x-2 text-sm">
-                        <AlertTriangle className="w-3 h-3 text-orange-500" />
-                        <span>{section}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <CardContent className="space-y-6">
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">{analysisResults.totalConflicts}</div>
+                <div className="text-sm text-red-800">Total Conflicts</div>
               </div>
-            ))}
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">{analysisResults.criticalIssues}</div>
+                <div className="text-sm text-orange-800">Critical Issues</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{analysisResults.recommendations}</div>
+                <div className="text-sm text-blue-800">Recommendations</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{selectedCount}</div>
+                <div className="text-sm text-green-800">Documents Analyzed</div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Detailed Conflicts */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Identified Conflicts</h3>
+              {analysisResults.conflicts.map((conflict: any) => (
+                <Card key={conflict.id} className="border-l-4 border-l-orange-500">
+                  <CardContent className="pt-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-semibold text-lg">{conflict.id} {conflict.title}</h4>
+                      <Badge 
+                        variant={conflict.severity === "high" ? "destructive" : "secondary"}
+                      >
+                        {conflict.severity.toUpperCase()}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-gray-700 mb-3">{conflict.description}</p>
+                    
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <h5 className="font-medium text-blue-900 mb-1">Recommendation:</h5>
+                      <p className="text-blue-800 text-sm">{conflict.recommendation}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

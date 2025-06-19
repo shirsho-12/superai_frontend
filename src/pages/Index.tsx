@@ -1,10 +1,13 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart, Globe, User, Shield, Activity } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Calendar, Clock, AlertCircle, CheckCircle, FileText, Users, TrendingUp, BarChart, Globe, User, Shield, Activity, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import RegulatoryCard from "@/components/cards/RegulatoryCard";
 import GapReviewScreen from "@/components/GapReviewScreen";
 import AmendmentWorkbench from "@/components/AmendmentWorkbench";
@@ -14,15 +17,20 @@ import AuditTrail from "@/components/AuditTrail";
 import UserManagement from "@/components/UserManagement";
 import AutomatedIngestion from "@/components/AutomatedIngestion";
 
-const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+interface IndexProps {
+  defaultTab?: string;
+}
+
+const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [selectedRegulation, setSelectedRegulation] = useState<{ id: number; title: string } | null>(null);
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   
   // Mock data for regulatory items
   const regulatoryItems = [
     {
       id: 1,
-      title: "Consultation Paper on Proposed Amendments to Notice PSN01",
+      title: "Consultation Paper on Proposed Amendments to Notice PSN01 - Payment Services",
       publicationDate: "2024-06-10",
       closingDate: "2024-07-05",
       status: "Analysis in Progress",
@@ -32,7 +40,7 @@ const Index = () => {
     },
     {
       id: 2,
-      title: "Technology Risk Management Guidelines Update",
+      title: "Technology Risk Management Guidelines Update for Payment Institutions",
       publicationDate: "2024-06-08",
       closingDate: "2024-06-25",
       status: "Gaps Identified",
@@ -42,9 +50,9 @@ const Index = () => {
     },
     {
       id: 3,
-      title: "Digital Payment Token Services - Licensing Framework",
+      title: "Digital Payment Token Services - Enhanced Licensing Framework",
       publicationDate: "2024-05-28",
-      closingDate: "2024-06-20",
+      closingDate: "2024-07-20",
       status: "Completed",
       priority: "medium",
       gapsFound: 0,
@@ -52,21 +60,70 @@ const Index = () => {
     },
     {
       id: 4,
-      title: "AML/CFT Requirements for Money Service Businesses",
+      title: "AML/CFT Requirements for Digital Payment Service Providers",
       publicationDate: "2024-06-15",
       closingDate: "2024-07-15",
       status: "New",
       priority: "medium",
       gapsFound: 0,
       type: "notice"
+    },
+    {
+      id: 5,
+      title: "Cybersecurity Standards for Payment Service Providers",
+      publicationDate: "2024-06-12",
+      closingDate: "2024-07-10",
+      status: "Analysis in Progress",
+      priority: "high",
+      gapsFound: 2,
+      type: "standard"
+    },
+    {
+      id: 6,
+      title: "Consumer Protection Measures for Digital Payment Services",
+      publicationDate: "2024-06-05",
+      closingDate: "2024-07-08",
+      status: "Gaps Identified",
+      priority: "medium",
+      gapsFound: 4,
+      type: "guideline"
+    },
+    {
+      id: 7,
+      title: "Cross-Border Payment Services Regulatory Framework",
+      publicationDate: "2024-05-30",
+      closingDate: "2024-07-12",
+      status: "New",
+      priority: "high",
+      gapsFound: 0,
+      type: "framework"
+    },
+    {
+      id: 8,
+      title: "Mobile Payment Security Guidelines for Financial Institutions",
+      publicationDate: "2024-06-01",
+      closingDate: "2024-07-18",
+      status: "Completed",
+      priority: "medium",
+      gapsFound: 0,
+      type: "guideline"
     }
   ];
 
+  const filteredItems = useMemo(() => {
+    if (!dateFilter) return regulatoryItems;
+    
+    return regulatoryItems.filter(item => {
+      const itemDate = new Date(item.publicationDate);
+      return itemDate >= dateFilter;
+    });
+  }, [dateFilter]);
+
   const stats = {
-    totalDocuments: 24,
-    pendingGaps: 8,
-    completedReviews: 16,
-    urgentItems: 2
+    totalDocuments: regulatoryItems.length,
+    pendingGaps: regulatoryItems.reduce((sum, item) => sum + item.gapsFound, 0),
+    completedReviews: regulatoryItems.filter(item => item.status === "Completed").length,
+    urgentItems: regulatoryItems.filter(item => item.priority === "urgent").length
   };
 
   const handleViewGaps = (item: { id: number; title: string }) => {
@@ -205,14 +262,40 @@ const Index = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-semibold text-gray-900">Active Regulatory Items</h2>
-                <Button variant="outline" size="sm">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Filter by Date
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <CalendarIcon className="w-4 h-4 mr-2" />
+                        {dateFilter ? format(dateFilter, "MMM dd, yyyy") : "Filter by Date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateFilter}
+                        onSelect={setDateFilter}
+                        initialFocus
+                      />
+                      {dateFilter && (
+                        <div className="p-2 border-t">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setDateFilter(undefined)}
+                            className="w-full"
+                          >
+                            Clear Filter
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {regulatoryItems.map((item) => (
+                {filteredItems.map((item) => (
                   <RegulatoryCard 
                     key={item.id} 
                     item={item} 
@@ -268,7 +351,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="ingestion">
-            <AutomatedIngestion />
+            <AutomatedIngestion onNavigateToDashboard={() => setActiveTab("dashboard")} />
           </TabsContent>
         </Tabs>
       </main>

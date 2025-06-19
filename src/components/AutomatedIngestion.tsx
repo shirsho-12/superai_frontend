@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Globe, RefreshCw, CheckCircle, AlertTriangle, Clock, Download, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useComplianceAPI } from "@/hooks/use-compliance-api";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import ManualFileUpload from "./ManualFileUpload";
 
 interface MonitoringSource {
@@ -16,7 +17,7 @@ interface MonitoringSource {
   url: string;
   enabled: boolean;
   lastCheck: string;
-  status: "active" | "error" | "pending";
+  status: "active" | "error" | "pending" | "inactive";
   documentsFound: number;
 }
 
@@ -31,9 +32,15 @@ interface IngestedDocument {
   confidence: number;
 }
 
-const AutomatedIngestion: React.FC = () => {
+interface AutomatedIngestionProps {
+  onNavigateToDashboard?: () => void;
+}
+
+const AutomatedIngestion: React.FC<AutomatedIngestionProps> = ({ onNavigateToDashboard }) => {
   const { uploadDocument, scanRegulatorySource } = useComplianceAPI();
   const [isScanning, setIsScanning] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState<string | null>(null);
+  
   const [sources, setSources] = useState<MonitoringSource[]>([
     {
       id: "mas-main",
@@ -59,7 +66,7 @@ const AutomatedIngestion: React.FC = () => {
       url: "https://www.mas.gov.sg/regulation/circulars",
       enabled: false,
       lastCheck: "2024-06-16T15:00:00Z",
-      status: "pending",
+      status: "inactive",
       documentsFound: 89
     }
   ]);
@@ -67,7 +74,7 @@ const AutomatedIngestion: React.FC = () => {
   const [recentDocuments, setRecentDocuments] = useState<IngestedDocument[]>([
     {
       id: "doc1",
-      title: "Consultation Paper on Proposed Amendments to Notice PSN01",
+      title: "1.1 Consultation Paper on Proposed Amendments to Notice PSN01",
       source: "MAS Consultation Papers",
       detectedDate: "2024-06-17T08:30:00Z",
       publicationDate: "2024-06-10T00:00:00Z",
@@ -77,7 +84,7 @@ const AutomatedIngestion: React.FC = () => {
     },
     {
       id: "doc2",
-      title: "Technology Risk Management Guidelines Update",
+      title: "1.2 Technology Risk Management Guidelines Update",
       source: "MAS Guidelines & Notices",
       detectedDate: "2024-06-16T16:45:00Z",
       publicationDate: "2024-06-08T00:00:00Z",
@@ -87,7 +94,7 @@ const AutomatedIngestion: React.FC = () => {
     },
     {
       id: "doc3",
-      title: "Digital Payment Token Services - Licensing Framework",
+      title: "1.3 Digital Payment Token Services - Licensing Framework",
       source: "MAS Guidelines & Notices",
       detectedDate: "2024-06-15T14:20:00Z",
       publicationDate: "2024-05-28T00:00:00Z",
@@ -98,14 +105,63 @@ const AutomatedIngestion: React.FC = () => {
   ]);
 
   const handleToggleSource = (sourceId: string, enabled: boolean) => {
-    setSources(sources.map(source => 
-      source.id === sourceId ? { ...source, enabled } : source
-    ));
+    setSources(sources.map(source => {
+      if (source.id === sourceId) {
+        return { 
+          ...source, 
+          enabled,
+          status: enabled ? "active" : "inactive"
+        };
+      }
+      return source;
+    }));
     
     toast({
       title: enabled ? "Monitoring enabled" : "Monitoring disabled",
       description: `Source monitoring has been ${enabled ? 'activated' : 'deactivated'}`
     });
+  };
+
+  const handleStartAnalysis = async (docId: string) => {
+    setAnalysisLoading(docId);
+    
+    // Simulate analysis with loading time
+    setTimeout(() => {
+      setRecentDocuments(docs => 
+        docs.map(doc => 
+          doc.id === docId 
+            ? { ...doc, status: "processing" as const }
+            : doc
+        )
+      );
+      
+      setTimeout(() => {
+        setRecentDocuments(docs => 
+          docs.map(doc => 
+            doc.id === docId 
+              ? { ...doc, status: "analyzed" as const }
+              : doc
+          )
+        );
+        setAnalysisLoading(null);
+        
+        toast({
+          title: "Analysis completed",
+          description: "Document analysis has been completed successfully"
+        });
+        
+        // Navigate to dashboard after analysis
+        if (onNavigateToDashboard) {
+          setTimeout(() => {
+            onNavigateToDashboard();
+            toast({
+              title: "Redirected to Dashboard",
+              description: "Check the results in your dashboard"
+            });
+          }, 1000);
+        }
+      }, 2000);
+    }, 1000);
   };
 
   const handleManualUpload = async (uploadData: {
@@ -128,10 +184,11 @@ const AutomatedIngestion: React.FC = () => {
         file: uploadData.file
       });
 
-      // Add the uploaded document to the recent documents list
+      // Add the uploaded document to the recent documents list with numbering
+      const nextNumber = recentDocuments.length + 1;
       const newDoc: IngestedDocument = {
         id: result.documentId,
-        title: uploadData.title,
+        title: `${nextNumber}.1 ${uploadData.title}`,
         source: "Manual Upload",
         detectedDate: new Date().toISOString(),
         publicationDate: uploadData.date.toISOString(),
@@ -155,9 +212,10 @@ const AutomatedIngestion: React.FC = () => {
       setIsScanning(false);
       
       // Mock new document discovery
+      const nextNumber = recentDocuments.length + 1;
       const newDoc: IngestedDocument = {
         id: `doc${Date.now()}`,
-        title: "Updated AML/CFT Requirements for Digital Payment Services",
+        title: `${nextNumber}.1 Updated AML/CFT Requirements for Digital Payment Services`,
         source: "MAS Guidelines & Notices",
         detectedDate: new Date().toISOString(),
         publicationDate: "2024-06-17T00:00:00Z",
@@ -180,6 +238,7 @@ const AutomatedIngestion: React.FC = () => {
       case "active": return "bg-green-100 text-green-800";
       case "error": return "bg-red-100 text-red-800";
       case "pending": return "bg-yellow-100 text-yellow-800";
+      case "inactive": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -320,8 +379,19 @@ const AutomatedIngestion: React.FC = () => {
                       </Button>
                     )}
                     {doc.status === "new" && (
-                      <Button size="sm">
-                        Start Analysis
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleStartAnalysis(doc.id)}
+                        disabled={analysisLoading === doc.id}
+                      >
+                        {analysisLoading === doc.id ? (
+                          <>
+                            <LoadingSpinner size="sm" className="mr-2" />
+                            Analyzing...
+                          </>
+                        ) : (
+                          "Start Analysis"
+                        )}
                       </Button>
                     )}
                   </div>
@@ -339,11 +409,11 @@ const AutomatedIngestion: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">3</div>
+              <div className="text-2xl font-bold text-blue-600">{sources.filter(s => s.enabled).length}</div>
               <div className="text-sm text-gray-500">Active Sources</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">24</div>
+              <div className="text-2xl font-bold text-green-600">{recentDocuments.length}</div>
               <div className="text-sm text-gray-500">Documents This Month</div>
             </div>
             <div className="text-center">

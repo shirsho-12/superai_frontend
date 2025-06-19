@@ -26,6 +26,7 @@ interface RegulatoryCardProps {
 
 const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }: RegulatoryCardProps) => {
   const daysUntilClosing = calculateDaysUntilDate(item.closingDate);
+  const isOverdue = daysUntilClosing < 0 && item.status !== "Completed";
 
   return (
     <Card className={cn("compliance-card", getPriorityBorderClass(item.priority))}>
@@ -56,7 +57,7 @@ const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }:
             </Badge>
           )}
           
-          {daysUntilClosing <= 0 && (
+          {isOverdue && (
             <Badge variant="destructive" className="text-xs">
               <AlertTriangle className="w-3 h-3 mr-1" />
               Overdue

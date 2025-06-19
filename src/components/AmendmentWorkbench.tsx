@@ -3,17 +3,30 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, X, Edit, FileText } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, X, Edit, FileText, Save, XIcon } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "@/hooks/use-toast";
+
+interface Amendment {
+  id: number;
+  policySection: string;
+  originalText: string;
+  proposedText: string;
+  changeType: string;
+  status: string;
+  rationale: string;
+}
 
 interface AmendmentWorkbenchProps {
   regulation: { id: number; title: string } | null;
 }
 
 const AmendmentWorkbench: React.FC<AmendmentWorkbenchProps> = ({ regulation }) => {
-  const [amendments, setAmendments] = useState([
+  const [amendments, setAmendments] = useState<Amendment[]>([
     {
       id: 1,
-      policySection: "Section 3.2 - Customer Due Diligence",
+      policySection: "1.1 Customer Due Diligence",
       originalText: "Standard KYC procedures apply to all customers with verification of identity and address.",
       proposedText: "Enhanced due diligence measures must be applied to all high-risk customers, including politically exposed persons, with additional verification steps and ongoing monitoring.",
       changeType: "modification",
@@ -22,7 +35,7 @@ const AmendmentWorkbench: React.FC<AmendmentWorkbenchProps> = ({ regulation }) =
     },
     {
       id: 2,
-      policySection: "Section 5.1 - Transaction Monitoring",
+      policySection: "1.2 Transaction Monitoring",
       originalText: "Suspicious transaction reports are filed within 48 hours of detection.",
       proposedText: "Suspicious transaction reports must be filed within 24 hours of detection to comply with updated regulatory timelines.",
       changeType: "modification",
@@ -31,16 +44,76 @@ const AmendmentWorkbench: React.FC<AmendmentWorkbenchProps> = ({ regulation }) =
     }
   ]);
 
-  const handleApprove = (amendmentId: number) => {
+  const [editingAmendment, setEditingAmendment] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [loadingActions, setLoadingActions] = useState<{ [key: string]: boolean }>({});
+
+  const handleStartEdit = (amendmentId: number, currentText: string) => {
+    setEditingAmendment(amendmentId);
+    setEditText(currentText);
+  };
+
+  const handleSaveEdit = async (amendmentId: number) => {
+    setLoadingActions(prev => ({ ...prev, [`save-${amendmentId}`]: true }));
+    
+    // Simulate save delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setAmendments(amendments.map(amendment => 
+      amendment.id === amendmentId 
+        ? { ...amendment, proposedText: editText }
+        : amendment
+    ));
+    
+    setEditingAmendment(null);
+    setEditText("");
+    setLoadingActions(prev => ({ ...prev, [`save-${amendmentId}`]: false }));
+    
+    toast({
+      title: "Amendment updated",
+      description: "The proposed text has been successfully updated"
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAmendment(null);
+    setEditText("");
+  };
+
+  const handleApprove = async (amendmentId: number) => {
+    setLoadingActions(prev => ({ ...prev, [`approve-${amendmentId}`]: true }));
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     setAmendments(amendments.map(amendment => 
       amendment.id === amendmentId ? { ...amendment, status: "approved" } : amendment
     ));
+    
+    setLoadingActions(prev => ({ ...prev, [`approve-${amendmentId}`]: false }));
+    
+    toast({
+      title: "Amendment approved",
+      description: "The amendment has been successfully approved"
+    });
   };
 
-  const handleReject = (amendmentId: number) => {
+  const handleReject = async (amendmentId: number) => {
+    setLoadingActions(prev => ({ ...prev, [`reject-${amendmentId}`]: true }));
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     setAmendments(amendments.map(amendment => 
       amendment.id === amendmentId ? { ...amendment, status: "rejected" } : amendment
     ));
+    
+    setLoadingActions(prev => ({ ...prev, [`reject-${amendmentId}`]: false }));
+    
+    toast({
+      title: "Amendment rejected",
+      description: "The amendment has been rejected"
+    });
   };
 
   if (!regulation) {
@@ -105,36 +178,99 @@ const AmendmentWorkbench: React.FC<AmendmentWorkbenchProps> = ({ regulation }) =
                   </div>
                   
                   <div className="bg-green-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-green-900 mb-2">Proposed Text</h4>
-                    <p className="text-sm text-green-800">{amendment.proposedText}</p>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-semibold text-green-900">Proposed Text</h4>
+                      {amendment.status === "pending" && editingAmendment !== amendment.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStartEdit(amendment.id, amendment.proposedText)}
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {editingAmendment === amendment.id ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="min-h-[100px]"
+                          placeholder="Enter the proposed text..."
+                        />
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveEdit(amendment.id)}
+                            disabled={loadingActions[`save-${amendment.id}`]}
+                          >
+                            {loadingActions[`save-${amendment.id}`] ? (
+                              <>
+                                <LoadingSpinner size="sm" className="mr-2" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <Save className="w-3 h-3 mr-2" />
+                                Save
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                          >
+                            <XIcon className="w-3 h-3 mr-2" />
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-green-800">{amendment.proposedText}</p>
+                    )}
                   </div>
                 </div>
                 
-                {amendment.status === "pending" && (
+                {amendment.status === "pending" && editingAmendment !== amendment.id && (
                   <div className="flex space-x-3">
                     <Button 
                       onClick={() => handleApprove(amendment.id)}
                       className="flex-1"
+                      disabled={loadingActions[`approve-${amendment.id}`]}
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Approve Amendment
-                    </Button>
-                    
-                    <Button 
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Amendment
+                      {loadingActions[`approve-${amendment.id}`] ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2" />
+                          Approving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Approve Amendment
+                        </>
+                      )}
                     </Button>
                     
                     <Button 
                       variant="destructive" 
                       onClick={() => handleReject(amendment.id)}
                       className="flex-1"
+                      disabled={loadingActions[`reject-${amendment.id}`]}
                     >
-                      <X className="w-4 h-4 mr-2" />
-                      Reject Amendment
+                      {loadingActions[`reject-${amendment.id}`] ? (
+                        <>
+                          <LoadingSpinner size="sm" className="mr-2" />
+                          Rejecting...
+                        </>
+                      ) : (
+                        <>
+                          <X className="w-4 h-4 mr-2" />
+                          Reject Amendment
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
