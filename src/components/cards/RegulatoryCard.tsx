@@ -22,9 +22,18 @@ interface RegulatoryCardProps {
   onViewGaps: () => void;
   onAmendPolicies: () => void;
   onGenerateReport: () => void;
+  onViewAnalysis: () => void;
+  onStartAnalysis: () => void;
 }
 
-const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }: RegulatoryCardProps) => {
+const RegulatoryCard = ({ 
+  item, 
+  onViewGaps, 
+  onAmendPolicies, 
+  onGenerateReport, 
+  onViewAnalysis,
+  onStartAnalysis 
+}: RegulatoryCardProps) => {
   const daysUntilClosing = calculateDaysUntilDate(item.closingDate);
   const isOverdue = daysUntilClosing < 0 && item.status !== "Completed";
 
@@ -47,7 +56,7 @@ const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }:
           <Badge className={getStatusBadgeClass(item.status)}>
             {item.status === "Completed" && <CheckCircle className="w-3 h-3 mr-1" />}
             {item.status === "Gaps Identified" && <AlertTriangle className="w-3 h-3 mr-1" />}
-            {item.status}
+            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
           </Badge>
           
           {daysUntilClosing <= 7 && daysUntilClosing > 0 && (
@@ -124,15 +133,15 @@ const RegulatoryCard = ({ item, onViewGaps, onAmendPolicies, onGenerateReport }:
           )}
           
           {item.status === "New" && (
-            <Button size="sm" className="flex-1">
+            <Button onClick={onStartAnalysis} size="sm" className="flex-1">
               Start Analysis
             </Button>
           )}
           
           {item.status === "Completed" && (
-            <Button variant="outline" size="sm" className="flex-1">
+            <Button onClick={onViewAnalysis} variant="outline" size="sm" className="flex-1">
               <Eye className="w-4 h-4 mr-2" />
-              View Summary
+              View Analysis
             </Button>
           )}
           

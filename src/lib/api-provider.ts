@@ -158,7 +158,7 @@ class MockApiProvider {
       "and policies",
       policyIds
     );
-    await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Changed to 2 seconds
     return {
       summary:
         "Cross-impact analysis completed. Key overlaps and conflicts identified.",
@@ -232,6 +232,26 @@ class MockApiProvider {
       progress: 100,
     };
   }
+
+  async getUploadedDocuments(
+    filters?: { tag?: string; dateFrom?: string; dateTo?: string }
+  ): Promise<RegulatoryDocument[]> {
+    console.log("Mock API: Getting uploaded documents with filters", filters);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    return [
+      {
+        id: "doc-1",
+        title: "Sample Document 1",
+        publicationDate: "2024-06-01",
+        closingDate: "2024-07-01",
+        status: "analyzed",
+        priority: "high",
+        gapsFound: 2,
+        type: "consultation"
+      }
+    ];
+  }
 }
 
 // Create singleton instance
@@ -285,6 +305,39 @@ export class ComplianceAPIProvider {
   ) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
+  }
+
+  async analyzeDocument(documentId: string, content?: string): Promise<AnalysisReport> {
+    return this.mockApiCall<AnalysisReport>("/documents/analyze", { documentId, content });
+  }
+
+  async generateAmendments(gapId: string): Promise<PolicyAmendment[]> {
+    const result = await this.mockApiCall<{ amendments: PolicyAmendment[] }>("/amendments/generate", { gapId });
+    return result.amendments;
+  }
+
+  async generateExecutiveReport(documentId: string): Promise<AnalysisReport> {
+    return this.mockApiCall<AnalysisReport>("/reports/generate", { documentId });
+  }
+
+  async analyzeCrossImpact(documentIds: string[], policyIds: string[]): Promise<any> {
+    return this.mockApiCall<any>("/analysis/cross-impact", { documentIds, policyIds }, 2000);
+  }
+
+  async scanRegulatorySource(sourceUrl: string): Promise<any> {
+    return this.mockApiCall<any>("/ingestion/scan", { sourceUrl }, 3000);
+  }
+
+  async uploadDocument(data: ManualUploadRequest): Promise<ManualUploadResponse> {
+    return this.mockApiCall<ManualUploadResponse>("/documents/upload", data, 2000);
+  }
+
+  async getUploadStatus(uploadId: string): Promise<{ status: string; progress: number }> {
+    return this.mockApiCall<{ status: string; progress: number }>("/uploads/status", { uploadId }, 500);
+  }
+
+  async getUploadedDocuments(filters?: { tag?: string; dateFrom?: string; dateTo?: string }): Promise<RegulatoryDocument[]> {
+    return this.mockApiCall<RegulatoryDocument[]>("/documents", filters, 1000);
   }
 
   private async mockApiCall<T>(
@@ -354,6 +407,29 @@ export class ComplianceAPIProvider {
           totalChanges: 5,
           highImpactChanges: 2,
         };
+      case "/analysis/cross-impact":
+        return {
+          summary: "Cross-impact analysis completed",
+          details: "Detailed analysis results here.",
+        };
+      case "/documents/upload":
+        return {
+          documentId: "doc-" + Date.now(),
+          s3Upload: {
+            fileUrl: `https://s3.amazonaws.com/uploads/${Date.now()}-${data?.file?.name}`,
+            fileKey: `uploads/${Date.now()}-${data?.file?.name}`,
+            uploadId: `upload-${Date.now()}`
+          },
+          status: "uploaded",
+          message: "Document uploaded successfully"
+        };
+      case "/uploads/status":
+        return {
+          status: "completed",
+          progress: 100
+        };
+      case "/documents":
+        return [];
       default:
         return { success: true };
     }

@@ -308,14 +308,14 @@ const AutomatedIngestion: React.FC<AutomatedIngestionProps> = ({ onNavigateToDas
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className="font-semibold">{source.name}</h4>
                       <Badge className={getStatusColor(source.status)}>
-                        {source.status}
+                        {source.status.charAt(0).toUpperCase() + source.status.slice(1)}
                       </Badge>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{source.url}</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-500">
                       <div>Last checked: {new Date(source.lastCheck).toLocaleString()}</div>
                       <div>Documents found: {source.documentsFound}</div>
-                      <div>Status: {source.status}</div>
+                      <div>Status: {source.status.charAt(0).toUpperCase() + source.status.slice(1)}</div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">

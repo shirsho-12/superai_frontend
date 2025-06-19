@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ import MultiDocumentAnalysis from "@/components/MultiDocumentAnalysis";
 import AuditTrail from "@/components/AuditTrail";
 import UserManagement from "@/components/UserManagement";
 import AutomatedIngestion from "@/components/AutomatedIngestion";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { toast } from "@/hooks/use-toast";
 
 interface IndexProps {
   defaultTab?: string;
@@ -25,14 +28,15 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [selectedRegulation, setSelectedRegulation] = useState<{ id: number; title: string } | null>(null);
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [loadingStates, setLoadingStates] = useState<{ [key: string]: boolean }>({});
   
   // Mock data for regulatory items
   const regulatoryItems = [
     {
       id: 1,
-      title: "Consultation Paper on Proposed Amendments to Notice PSN01 - Payment Services",
+      title: "1.1 Consultation Paper on Proposed Amendments to Notice PSN01 - Payment Services",
       publicationDate: "2024-06-10",
-      closingDate: "2024-07-05",
+      closingDate: "2024-07-25",
       status: "Analysis in Progress",
       priority: "high",
       gapsFound: 3,
@@ -40,7 +44,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 2,
-      title: "Technology Risk Management Guidelines Update for Payment Institutions",
+      title: "1.2 Technology Risk Management Guidelines Update for Payment Institutions",
       publicationDate: "2024-06-08",
       closingDate: "2024-06-25",
       status: "Gaps Identified",
@@ -50,7 +54,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 3,
-      title: "Digital Payment Token Services - Enhanced Licensing Framework",
+      title: "1.3 Digital Payment Token Services - Enhanced Licensing Framework",
       publicationDate: "2024-05-28",
       closingDate: "2024-07-20",
       status: "Completed",
@@ -60,7 +64,7 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 4,
-      title: "AML/CFT Requirements for Digital Payment Service Providers",
+      title: "1.4 AML/CFT Requirements for Digital Payment Service Providers",
       publicationDate: "2024-06-15",
       closingDate: "2024-07-15",
       status: "New",
@@ -70,9 +74,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 5,
-      title: "Cybersecurity Standards for Payment Service Providers",
+      title: "1.5 Cybersecurity Standards for Payment Service Providers",
       publicationDate: "2024-06-12",
-      closingDate: "2024-07-10",
+      closingDate: "2024-07-30",
       status: "Analysis in Progress",
       priority: "high",
       gapsFound: 2,
@@ -80,9 +84,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 6,
-      title: "Consumer Protection Measures for Digital Payment Services",
+      title: "1.6 Consumer Protection Measures for Digital Payment Services",
       publicationDate: "2024-06-05",
-      closingDate: "2024-07-08",
+      closingDate: "2024-07-28",
       status: "Gaps Identified",
       priority: "medium",
       gapsFound: 4,
@@ -90,9 +94,9 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 7,
-      title: "Cross-Border Payment Services Regulatory Framework",
+      title: "1.7 Cross-Border Payment Services Regulatory Framework",
       publicationDate: "2024-05-30",
-      closingDate: "2024-07-12",
+      closingDate: "2024-07-22",
       status: "New",
       priority: "high",
       gapsFound: 0,
@@ -100,11 +104,31 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     },
     {
       id: 8,
-      title: "Mobile Payment Security Guidelines for Financial Institutions",
+      title: "1.8 Mobile Payment Security Guidelines for Financial Institutions",
       publicationDate: "2024-06-01",
       closingDate: "2024-07-18",
       status: "Completed",
       priority: "medium",
+      gapsFound: 0,
+      type: "guideline"
+    },
+    {
+      id: 9,
+      title: "1.9 Payment Service Provider Licensing Requirements Update",
+      publicationDate: "2024-06-03",
+      closingDate: "2024-07-26",
+      status: "Analysis in Progress",
+      priority: "high",
+      gapsFound: 1,
+      type: "framework"
+    },
+    {
+      id: 10,
+      title: "1.10 Digital Token Anti-Money Laundering Guidelines",
+      publicationDate: "2024-06-07",
+      closingDate: "2024-07-24",
+      status: "New",
+      priority: "urgent",
       gapsFound: 0,
       type: "guideline"
     }
@@ -115,7 +139,10 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     
     return regulatoryItems.filter(item => {
       const itemDate = new Date(item.publicationDate);
-      return itemDate >= dateFilter;
+      const filterDate = new Date(dateFilter);
+      filterDate.setHours(0, 0, 0, 0);
+      itemDate.setHours(0, 0, 0, 0);
+      return itemDate >= filterDate;
     });
   }, [dateFilter]);
 
@@ -136,13 +163,55 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
     setActiveTab("amendments");
   };
 
-  const handleGenerateReport = (item: { id: number; title: string }) => {
+  const handleGenerateReport = async (item: { id: number; title: string }) => {
+    setLoadingStates(prev => ({ ...prev, [`report-${item.id}`]: true }));
+    
+    // Simulate loading for 1-3 seconds
+    const loadTime = Math.random() * 2000 + 1000;
+    await new Promise(resolve => setTimeout(resolve, loadTime));
+    
+    setLoadingStates(prev => ({ ...prev, [`report-${item.id}`]: false }));
     setSelectedRegulation(item);
     setActiveTab("reports");
+    
+    toast({
+      title: "Report Generated",
+      description: "Executive report has been generated successfully"
+    });
+  };
+
+  const handleViewAnalysis = (item: { id: number; title: string }) => {
+    setSelectedRegulation(item);
+    setActiveTab("analysis");
+  };
+
+  const handleStartAnalysis = async (item: { id: number; title: string }) => {
+    setLoadingStates(prev => ({ ...prev, [`analysis-${item.id}`]: true }));
+    
+    // Simulate loading for 1-3 seconds
+    const loadTime = Math.random() * 2000 + 1000;
+    await new Promise(resolve => setTimeout(resolve, loadTime));
+    
+    setLoadingStates(prev => ({ ...prev, [`analysis-${item.id}`]: false }));
+    
+    toast({
+      title: "Analysis Started",
+      description: "Document analysis has been initiated"
+    });
   };
 
   return (
     <div className="min-h-screen gradient-header">
+      {/* Loading overlay */}
+      {Object.values(loadingStates).some(loading => loading) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg flex items-center space-x-3">
+            <LoadingSpinner size="lg" />
+            <span className="text-lg font-medium">Processing...</span>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -302,6 +371,8 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
                     onViewGaps={() => handleViewGaps(item)}
                     onAmendPolicies={() => handleAmendPolicies(item)}
                     onGenerateReport={() => handleGenerateReport(item)}
+                    onViewAnalysis={() => handleViewAnalysis(item)}
+                    onStartAnalysis={() => handleStartAnalysis(item)}
                   />
                 ))}
               </div>

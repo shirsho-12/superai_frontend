@@ -197,7 +197,7 @@ const AmendmentWorkbench: React.FC<AmendmentWorkbenchProps> = ({ regulation }) =
                         <Textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="min-h-[100px]"
+                          className="min-h-[100px] bg-white"
                           placeholder="Enter the proposed text..."
                         />
                         <div className="flex space-x-2">
