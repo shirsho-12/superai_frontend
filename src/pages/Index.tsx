@@ -216,11 +216,15 @@ const Index = ({ defaultTab = "dashboard" }: IndexProps) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
+              <a href="https://raw.githubusercontent.com/LuqDaMan/compliagent-horizon-view/refs/heads/main/logo.jpg">
+                <img 
+                  src="https://raw.githubusercontent.com/LuqDaMan/compliagent-horizon-view/refs/heads/main/logo.jpg" 
+                  alt="CompliAgent Logo" 
+                  className="w-12 h-12 rounded-lg object-cover"
+                />
+              </a>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">CompliAgent-SG</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Cntrl+Comply</h1>
                 <p className="text-sm text-gray-500">Regulatory Change Management</p>
               </div>
             </div>
